@@ -398,7 +398,7 @@ function Dashboard(): React.ReactElement {
   );
 }
 
-// Estilos actualizados con la paleta general del proyecto
+// Estilos 
 const styles: { [key: string]: React.CSSProperties } = {
   dashboardLayout: {
     display: "flex",

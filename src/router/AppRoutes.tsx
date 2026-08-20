@@ -6,7 +6,8 @@ import MainLayout from "../layouts/MainLayout";
 import Servicios from "../page/Servicios";
 import Contactos from "../page/Contacto";
 import Login from "../page/Login";
-import Dashboard from "../components/Dashboard"
+import Register from "../page/Register"; // <-- Importamos Register aquí
+import Dashboard from "../components/Dashboard";
 
 function AppRoutes() {
   return (
@@ -16,6 +17,7 @@ function AppRoutes() {
         <Route path="/nosotros" element={<Nosotros />} />
         <Route path="/servicios" element={<Servicios />} />
         <Route path="/contacto" element={<Contactos />} />
+        <Route path="/register" element={<Register />} />
       </Route>
 
       <Route path="/login" element={<Login />} />
@@ -23,4 +25,5 @@ function AppRoutes() {
     </Routes>
   );
 }
+
 export default AppRoutes;

@@ -1,9 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 
-// Estilo en línea para mantenerlo simple y directo.
-// En un proyecto real, se recomienda usar módulos CSS, Styled Components o Tailwind CSS.
-
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
   mainContainer: {
     padding: "60px 0",
     backgroundColor: "#ffffff",
@@ -14,7 +11,7 @@ const styles = {
   headerHero: {
     textAlign: "center",
     marginBottom: "60px",
-    position: "relative" as "relative",
+    position: "relative",
     overflow: "hidden",
     padding: "40px 0",
     borderBottom: "1px solid #e2e8f0",
@@ -24,7 +21,7 @@ const styles = {
     fontWeight: "bold",
     color: "#1f2937",
     marginBottom: "15px",
-    position: "relative" as "relative",
+    position: "relative",
     zIndex: 1,
   },
   subtitleHero: {
@@ -33,11 +30,11 @@ const styles = {
     maxWidth: "800px",
     margin: "0 auto",
     lineHeight: "1.6",
-    position: "relative" as "relative",
+    position: "relative",
     zIndex: 1,
   },
   pandasLogoHero: {
-    position: "absolute" as "absolute",
+    position: "absolute",
     right: "-30px",
     top: "-30px",
     width: "180px",
@@ -49,6 +46,7 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: "30px",
     marginBottom: "60px",
+    padding: "0 40px",
   },
   featureCard: {
     background: "#f9fafb",
@@ -56,9 +54,9 @@ const styles = {
     borderRadius: "10px",
     border: "1px solid #e5e7eb",
     display: "flex",
-    flexDirection: "column" as "column",
+    flexDirection: "column",
     transition: "transform 0.3s ease, box-shadow 0.3s ease",
-    position: "relative" as "relative",
+    position: "relative",
   },
   featureCardHover: {
     transform: "translateY(-5px)",
@@ -85,6 +83,8 @@ const styles = {
     padding: "30px",
     borderRadius: "10px",
     marginBottom: "60px",
+    marginLeft: "40px",
+    marginRight: "40px",
     boxShadow: "inset 0 2px 10px rgba(0,0,0,0.2)",
   },
   codeHeader: {
@@ -108,6 +108,8 @@ const styles = {
     borderRadius: "12px",
     border: "1px solid #e2e8f0",
     marginBottom: "40px",
+    marginLeft: "40px",
+    marginRight: "40px",
   },
   infoFlex: {
     display: "flex",
@@ -136,19 +138,18 @@ const styles = {
     textDecoration: "none",
     borderRadius: "8px",
     fontWeight: "bold",
-    transition: "backgroundColor 0.3s ease",
+    transition: "all 0.3s ease",
   },
 };
 
 function Home(): React.ReactElement {
-  // Función para manejar el efecto hover de las tarjetas (simplificado para este ejemplo)
-  const [hoveredCard, setHoveredCard] = React.useState<number | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   const cardFeatures = [
     {
       id: 1,
       title: "DataFrames",
-      icon: "https://pandas.pydata.org/docs/_images/index_getting_started.svg", // Placeholders de ejemplo
+      icon: "https://pandas.pydata.org/docs/_images/index_getting_started.svg",
       text: "Estructuras tabulares bidimensionales como hojas de cálculo con índices en filas y columnas. Es el núcleo de Pandas.",
     },
     {
@@ -185,7 +186,6 @@ function Home(): React.ReactElement {
 
   return (
     <section className="page" style={styles.mainContainer}>
-      {/* Sección Hero */}
       <header style={styles.headerHero}>
         <img
           src="https://raw.githubusercontent.com/pandas-dev/pandas/main/doc/source/_static/pandas_logo.png"
@@ -201,8 +201,7 @@ function Home(): React.ReactElement {
         </p>
       </header>
 
-      {/* Grid de Características */}
-      <section style={{ ...styles.container, ...styles.featuresGrid }}>
+      <section style={styles.featuresGrid}>
         {cardFeatures.map((feature, index) => (
           <article
             key={feature.id}
@@ -224,8 +223,7 @@ function Home(): React.ReactElement {
         ))}
       </section>
 
-      {/* Sección de Código */}
-      <article style={{ ...styles.container, ...styles.codeSection }}>
+      <article style={styles.codeSection}>
         <h3 style={styles.codeHeader}>
           <svg
             style={{ width: "20px", height: "20px" }}
@@ -276,8 +274,7 @@ print(ventas_por_producto)`}
         </pre>
       </article>
 
-      {/* Sección de Más Info */}
-      <article style={{ ...styles.container, ...styles.moreInfoSection }}>
+      <article style={styles.moreInfoSection}>
         <h3
           style={{
             ...styles.featureTitle,
@@ -289,7 +286,7 @@ print(ventas_por_producto)`}
         </h3>
         <div style={styles.infoFlex}>
           <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRadYXBHB9wMOqYz9V7AbbUGs-DNh6R7pTcdaa-1u2R2w&s=10" // Placeholder de ejemplo
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRadYXBHB9wMOqYz9V7AbbUGs-DNh6R7pTcdaa-1u2R2w&s=10"
             alt="Data Analysis Illustration"
             style={styles.infoImage}
           />

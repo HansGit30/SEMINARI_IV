@@ -11,21 +11,25 @@ function Login(): React.ReactElement {
     e.preventDefault();
     setError("");
 
-    
-    const isValidUser = email === "admin" || email === "admin@python.org";
-    const isValidPassword = password === "admin";
+    // Usuario por defecto del sistema
+    const isDefaultAdmin = (email === "admin" || email === "admin@python.org") && password === "admin";
 
-    if (isValidUser && isValidPassword) {
+    // Buscar en los usuarios registrados en localStorage sin usar 'any' explícito
+    const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
+    const foundUser = registeredUsers.find(
+      (u: { email?: string; password?: string }) => u.email === email && u.password === password
+    );
+
+    if (isDefaultAdmin || foundUser) {
       navigate("/dashboard");
     } else {
-      setError("AuthError: Credenciales inválidas ('admin' / 'admin')");
+      setError("AuthError: Credenciales inválidas ('admin' / 'admin' o usuario registrado)");
     }
   };
 
   return (
     <section className="page" style={styles.container}>
       <div style={styles.card}>
-        {}
         <div style={styles.header}>
           <div style={styles.badge}>
             <span style={styles.promptSymbol}>&gt;&gt;&gt;</span> import auth
@@ -34,14 +38,12 @@ function Login(): React.ReactElement {
           <p style={styles.subtitle}>Ingresa tus credenciales para acceder a la terminal</p>
         </div>
 
-        {}
         {error && (
           <div style={styles.errorMessage}>
             <code>{error}</code>
           </div>
         )}
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
             <label style={styles.label}>
@@ -76,7 +78,6 @@ function Login(): React.ReactElement {
           </button>
         </form>
 
-        {}
         <div style={styles.footer}>
           <p style={styles.footerText}>
             ¿No tienes cuenta?{" "}
@@ -89,7 +90,6 @@ function Login(): React.ReactElement {
     </section>
   );
 }
-
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
