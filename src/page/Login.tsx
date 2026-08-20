@@ -11,7 +11,7 @@ function Login(): React.ReactElement {
     e.preventDefault();
     setError("");
 
-    // Validación de usuario y contraseña
+    
     const isValidUser = email === "admin" || email === "admin@python.org";
     const isValidPassword = password === "admin";
 
@@ -25,7 +25,7 @@ function Login(): React.ReactElement {
   return (
     <section className="page" style={styles.container}>
       <div style={styles.card}>
-        {/* Cabecera temática */}
+        {}
         <div style={styles.header}>
           <div style={styles.badge}>
             <span style={styles.promptSymbol}>&gt;&gt;&gt;</span> import auth
@@ -34,7 +34,7 @@ function Login(): React.ReactElement {
           <p style={styles.subtitle}>Ingresa tus credenciales para acceder a la terminal</p>
         </div>
 
-        {/* Mensaje de error tipo excepción de Python */}
+        {}
         {error && (
           <div style={styles.errorMessage}>
             <code>{error}</code>
@@ -76,7 +76,7 @@ function Login(): React.ReactElement {
           </button>
         </form>
 
-        {/* Footer de la tarjeta */}
+        {}
         <div style={styles.footer}>
           <p style={styles.footerText}>
             ¿No tienes cuenta?{" "}
@@ -90,7 +90,7 @@ function Login(): React.ReactElement {
   );
 }
 
-// Estilos inspirados en la paleta oficial de Python
+
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     display: "flex",
@@ -101,11 +101,11 @@ const styles: { [key: string]: React.CSSProperties } = {
   card: {
     width: "100%",
     maxWidth: "420px",
-    backgroundColor: "#1e293b",
-    borderRadius: "12px",
-    padding: "32px",
-    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)",
-    border: "1px solid #334155",
+    backgroundColor: "#16103a",
+    borderRadius: "20px",
+    padding: "35px",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+    border: "1px solid rgba(168, 85, 247, 0.25)",
   },
   header: {
     textAlign: "center",
@@ -113,24 +113,25 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   badge: {
     display: "inline-block",
-    backgroundColor: "#0f172a",
+    backgroundColor: "#1e1b4b",
     color: "#38bdf8",
-    padding: "4px 12px",
+    padding: "6px 14px",
     borderRadius: "20px",
     fontSize: "13px",
     fontFamily: "monospace",
     marginBottom: "12px",
-    border: "1px solid #1e293b",
+    border: "1px solid rgba(168, 85, 247, 0.4)",
   },
   promptSymbol: {
     color: "#ffd43b",
     fontWeight: "bold",
   },
   title: {
-    color: "#ffd43b",
+    color: "#ffffff",
     fontSize: "28px",
     fontWeight: "bold",
     margin: "8px 0",
+    textShadow: "0 0 15px rgba(255, 255, 255, 0.3)",
   },
   subtitle: {
     color: "#94a3b8",
@@ -141,7 +142,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: "1px solid #f87171",
     color: "#fca5a5",
     padding: "10px 12px",
-    borderRadius: "6px",
+    borderRadius: "10px",
     fontSize: "13px",
     marginBottom: "20px",
   },
@@ -156,15 +157,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: "8px",
   },
   label: {
-    color: "#38bdf8",
-    fontSize: "14px",
+    color: "#cbd5e1",
+    fontSize: "13px",
+    fontWeight: 500,
   },
   input: {
     width: "100%",
-    padding: "12px 14px",
-    backgroundColor: "#0f172a",
-    border: "1px solid #334155",
-    borderRadius: "6px",
+    padding: "12px 15px",
+    backgroundColor: "#110d2b",
+    border: "1px solid rgba(168, 85, 247, 0.3)",
+    borderRadius: "10px",
     color: "#f8fafc",
     fontSize: "14px",
     outline: "none",
@@ -172,20 +174,21 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   button: {
     marginTop: "10px",
-    padding: "12px",
-    backgroundColor: "#306998",
-    color: "#ffd43b",
+    padding: "14px",
+    background: "linear-gradient(135deg, #9333ea 0%, #db2777 100%)",
+    color: "#ffffff",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "12px",
     fontSize: "15px",
     fontWeight: "bold",
     cursor: "pointer",
-    transition: "background-color 0.2s ease",
+    boxShadow: "0 4px 15px rgba(147, 51, 234, 0.4)",
+    transition: "all 0.2s ease",
   },
   footer: {
     marginTop: "24px",
     textAlign: "center",
-    borderTop: "1px solid #334155",
+    borderTop: "1px solid rgba(168, 85, 247, 0.2)",
     paddingTop: "16px",
   },
   footerText: {
@@ -193,7 +196,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: "14px",
   },
   link: {
-    color: "#ffd43b",
+    color: "#c084fc",
     textDecoration: "none",
     fontWeight: "bold",
   },
