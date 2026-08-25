@@ -1,344 +1,287 @@
+import React from 'react';
+
 function Services() {
   return (
-    <section className="page">
-      {}
+    <section className="hero-section">
       <style>{`
-        .services-container {
-          display: flex;
-          flex-direction: column;
-          gap: 40px;
+        /* ENCABEZADO SERVICES */
+        .services-header-container {
+          max-width: 1000px;
+          text-align: center;
+          margin-bottom: 3.5rem;
         }
 
-        .services-header {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .section-tag {
-          color: #f43f5e;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 1px;
+        .services-tag {
+          font-size: 0.75rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          color: #9333ea;
           text-transform: uppercase;
+          display: inline-block;
+          margin-bottom: 0.5rem;
         }
 
-        .services-header h2 {
-          font-size: 38px;
+        /* BARRA DE ESTADÍSTICAS */
+        .stats-notebook-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 1.5rem;
+          flex-wrap: wrap;
+          margin-bottom: 4rem;
+          width: 100%;
+          max-width: 900px;
+        }
+
+        .stat-notebook-card {
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          padding: 0.75rem 1.5rem;
+          border-radius: 1rem;
+          box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          transition: transform 0.2s ease;
+        }
+
+        .stat-notebook-card:hover {
+          transform: translateY(-3px);
+        }
+
+        .stat-notebook-number {
+          font-size: 1.5rem;
           font-weight: 800;
-          color: #ffffff;
-          text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+          color: #0f172a;
         }
 
-        .services-header p {
-          color: #94a3b8;
-          font-size: 15px;
+        .stat-notebook-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #64748b;
         }
 
-        /* Barra de estadísticas superior (+20 Proyectos, +10 Soluciones, etc.) */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
+        /* BOTÓN DE NOTA ADHESIVA */
+        .sticky-note-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          margin-top: 1.25rem;
+          padding: 0.6rem 1rem;
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 0.65rem;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #0f172a;
+          text-decoration: none;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+          transition: transform 0.2s ease, background-color 0.2s ease;
         }
 
-        .stat-card {
-          background: #16103a;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 16px;
-          padding: 25px;
+        .sticky-note-btn:hover {
+          transform: translateY(-2px);
+          background-color: #f8fafc;
+        }
+
+        .service-features-list {
           display: flex;
           flex-direction: column;
-          gap: 5px;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          gap: 0.4rem;
+          margin-top: 0.75rem;
         }
 
-        .stat-card h3 {
-          font-size: 28px;
+        .service-feature-item {
+          font-size: 0.85rem;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .service-feature-check {
           font-weight: 800;
-          color: #ffffff;
+          color: #10b981;
         }
 
-        .stat-card span {
-          font-size: 13px;
-          color: #94a3b8;
-        }
-
-        /* Cuadrícula principal de Servicios */
-        .services-grid {
+        /* GRID DE SERVICIOS (3 COLUMNAS) */
+        .services-notes-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 30px;
-        }
-
-        .service-card {
-          background: #16103a;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 20px;
-          padding: 30px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          gap: 20px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-          position: relative;
-        }
-
-        .service-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        }
-
-        .service-icon-box {
-          width: 45px;
-          height: 45px;
-          background: #1e1b4b;
-          border: 1px solid rgba(168, 85, 247, 0.4);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-        }
-
-        .service-number {
-          font-size: 12px;
-          color: #64748b;
-          font-weight: 600;
-        }
-
-        .service-info h3 {
-          font-size: 20px;
-          font-weight: 700;
-          color: #ffffff;
-          margin-bottom: 8px;
-        }
-
-        .service-info p {
-          font-size: 13px;
-          color: #94a3b8;
-          line-height: 1.5;
-        }
-
-        .service-divider {
+          gap: 3rem 2rem;
+          max-width: 1000px;
           width: 100%;
-          height: 1px;
-          background: rgba(168, 85, 247, 0.2);
-          margin: 10px 0;
         }
 
-        .service-features {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .feature-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 13px;
-          color: #cbd5e1;
-        }
-
-        .feature-check {
-          color: #38bdf8;
-          font-size: 14px;
-        }
-
-        .service-btn {
-          background: #1e1b4b;
-          border: 1px solid rgba(168, 85, 247, 0.3);
-          color: #ffffff;
-          padding: 12px 20px;
-          border-radius: 12px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          margin-top: 10px;
-        }
-
-        .service-btn:hover {
-          background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
-          border-color: transparent;
-          box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
-        }
-
-        @media (max-width: 1024px) {
-          .stats-grid {
+        @media (max-width: 900px) {
+          .services-notes-grid {
             grid-template-columns: repeat(2, 1fr);
           }
-          .services-grid {
-            grid-template-columns: 1fr 1fr;
-          }
         }
 
-        @media (max-width: 768px) {
-          .stats-grid, .services-grid {
+        @media (max-width: 600px) {
+          .services-notes-grid {
             grid-template-columns: 1fr;
           }
         }
       `}</style>
 
-      <div className="services-container">
-        {}
-        <div className="services-header">
-          <span className="section-tag">NUESTROS SERVICIOS</span>
-          <h2>Soluciones digitales</h2>
-          <p>Desarrollamos soluciones tecnológicas modernas para transformar ideas en proyectos funcionales.</p>
+      {/* 1. Encabezado principal */}
+      <div className="services-header-container">
+        <span className="services-tag">NUESTROS SERVICIOS</span>
+        <h1 className="hero-title">
+          Soluciones{" "}
+          <span className="inline-card shadow-orange">
+            <span className="badge badge-orange">Digitales</span>
+            ⚡
+          </span>{" "}
+          hechas a medida.
+        </h1>
+        <p className="hero-subtitle">
+          Desarrollamos soluciones tecnológicas modernas para transformar ideas en proyectos funcionales.
+        </p>
+      </div>
+
+      {/* 2. Estadísticas estilo cuaderno */}
+      <div className="stats-notebook-container">
+        <div className="stat-notebook-card">
+          <span className="stat-notebook-number text-purple">+20</span>
+          <span className="stat-notebook-label">Proyectos</span>
+        </div>
+        <div className="stat-notebook-card">
+          <span className="stat-notebook-number text-orange">+10</span>
+          <span className="stat-notebook-label">Soluciones</span>
+        </div>
+        <div className="stat-notebook-card">
+          <span className="stat-notebook-number text-green">100%</span>
+          <span className="stat-notebook-label">Compromiso</span>
+        </div>
+        <div className="stat-notebook-card">
+          <span className="stat-notebook-number text-purple">24/7</span>
+          <span className="stat-notebook-label">Disponibilidad</span>
+        </div>
+      </div>
+
+      {/* 3. Grid de Servicios (6 Notas Adhesivas) */}
+      <div className="services-notes-grid">
+        {/* Servicio 01 */}
+        <div className="sticky-note -rotate-3">
+          <div className="pin pin-orange"></div>
+          <div className="note-content orange">
+            <span className="note-number">01. 💻</span>
+            <h3 className="note-title">Desarrollo Web</h3>
+            <p className="note-desc">
+              Creamos sitios web modernos, rápidos y adaptables a cualquier dispositivo.
+            </p>
+            <div className="service-features-list">
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Diseño responsive</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Interfaz moderna</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Optimización web</div>
+            </div>
+            <a href="#ver" className="sticky-note-btn">
+              Ver servicio <span>→</span>
+            </a>
+          </div>
         </div>
 
-        {}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <h3>+20</h3>
-            <span>Proyectos</span>
-          </div>
-          <div className="stat-card">
-            <h3>+10</h3>
-            <span>Soluciones</span>
-          </div>
-          <div className="stat-card">
-            <h3>100%</h3>
-            <span>Compromiso</span>
-          </div>
-          <div className="stat-card">
-            <h3>24/7</h3>
-            <span>Disponibilidad</span>
+        {/* Servicio 02 */}
+        <div className="sticky-note rotate-2">
+          <div className="pin pin-blue"></div>
+          <div className="note-content blue">
+            <span className="note-number">02. ⚙️</span>
+            <h3 className="note-title">Desarrollo de Software</h3>
+            <p className="note-desc">
+              Desarrollamos soluciones de software enfocadas en las necesidades de cada proyecto.
+            </p>
+            <div className="service-features-list">
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Sistemas personalizados</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Automatización</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Mantenimiento</div>
+            </div>
+            <a href="#ver" className="sticky-note-btn">
+              Ver servicio <span>→</span>
+            </a>
           </div>
         </div>
 
-        {}
-        <div className="services-grid">
-          {}
-          <div className="service-card">
-            <div>
-              <div className="service-card-header">
-                <div className="service-icon-box">💻</div>
-                <span className="service-number">01</span>
-              </div>
-              <div className="service-info" style={{ marginTop: '15px' }}>
-                <h3>Desarrollo Web</h3>
-                <p>Creamos sitios web modernos, rápidos y adaptables a cualquier dispositivo.</p>
-              </div>
-              <div className="service-divider"></div>
-              <div className="service-features">
-                <div className="feature-item"><span className="feature-check">✓</span> Diseño responsive</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Interfaz moderna</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Optimización web</div>
-              </div>
+        {/* Servicio 03 */}
+        <div className="sticky-note -rotate-2">
+          <div className="pin pin-purple"></div>
+          <div className="note-content purple">
+            <span className="note-number">03. 📊</span>
+            <h3 className="note-title">Análisis de Datos</h3>
+            <p className="note-desc">
+              Transformamos datos en información útil para facilitar la toma de decisiones.
+            </p>
+            <div className="service-features-list">
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Reportes</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Estadísticas</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Visualización de datos</div>
             </div>
-            <a href="#ver" className="service-btn">Ver servicio <span>→</span></a>
+            <a href="#ver" className="sticky-note-btn">
+              Ver servicio <span>→</span>
+            </a>
           </div>
+        </div>
 
-          {}
-          <div className="service-card">
-            <div>
-              <div className="service-card-header">
-                <div className="service-icon-box">⚙️</div>
-                <span className="service-number">02</span>
-              </div>
-              <div className="service-info" style={{ marginTop: '15px' }}>
-                <h3>Desarrollo de Software</h3>
-                <p>Desarrollamos soluciones de software enfocadas en las necesidades de cada proyecto.</p>
-              </div>
-              <div className="service-divider"></div>
-              <div className="service-features">
-                <div className="feature-item"><span className="feature-check">✓</span> Sistemas personalizados</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Automatización</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Mantenimiento</div>
-              </div>
+        {/* Servicio 04 */}
+        <div className="sticky-note rotate-3">
+          <div className="pin pin-purple"></div>
+          <div className="note-content purple">
+            <span className="note-number">04. 🤖</span>
+            <h3 className="note-title">Inteligencia Artificial</h3>
+            <p className="note-desc">
+              Integramos herramientas de inteligencia artificial para mejorar procesos y experiencias.
+            </p>
+            <div className="service-features-list">
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Automatización</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Modelos inteligentes</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Asistentes virtuales</div>
             </div>
-            <a href="#ver" className="service-btn">Ver servicio <span>→</span></a>
+            <a href="#ver" className="sticky-note-btn">
+              Ver servicio <span>→</span>
+            </a>
           </div>
+        </div>
 
-          {}
-          <div className="service-card">
-            <div>
-              <div className="service-card-header">
-                <div className="service-icon-box">📊</div>
-                <span className="service-number">03</span>
-              </div>
-              <div className="service-info" style={{ marginTop: '15px' }}>
-                <h3>Análisis de Datos</h3>
-                <p>Transformamos datos en información útil para facilitar la toma de decisiones.</p>
-              </div>
-              <div className="service-divider"></div>
-              <div className="service-features">
-                <div className="feature-item"><span className="feature-check">✓</span> Reportes</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Estadísticas</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Visualización de datos</div>
-              </div>
+        {/* Servicio 05 */}
+        <div className="sticky-note -rotate-3">
+          <div className="pin pin-orange"></div>
+          <div className="note-content orange">
+            <span className="note-number">05. 🔒</span>
+            <h3 className="note-title">Seguridad</h3>
+            <p className="note-desc">
+              Implementamos buenas prácticas para proteger la información y los sistemas.
+            </p>
+            <div className="service-features-list">
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Protección de datos</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Control de acceso</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Buenas prácticas</div>
             </div>
-            <a href="#ver" className="service-btn">Ver servicio <span>→</span></a>
+            <a href="#ver" className="sticky-note-btn">
+              Ver servicio <span>→</span>
+            </a>
           </div>
+        </div>
 
-          {}
-          <div className="service-card">
-            <div>
-              <div className="service-card-header">
-                <div className="service-icon-box">🤖</div>
-                <span className="service-number">04</span>
-              </div>
-              <div className="service-info" style={{ marginTop: '15px' }}>
-                <h3>Inteligencia Artificial</h3>
-                <p>Integramos herramientas de inteligencia artificial para mejorar procesos y experiencias.</p>
-              </div>
-              <div className="service-divider"></div>
-              <div className="service-features">
-                <div className="feature-item"><span className="feature-check">✓</span> Automatización</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Modelos inteligentes</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Asistentes virtuales</div>
-              </div>
+        {/* Servicio 06 */}
+        <div className="sticky-note rotate-2">
+          <div className="pin pin-blue"></div>
+          <div className="note-content blue">
+            <span className="note-number">06. 📱</span>
+            <h3 className="note-title">Aplicaciones</h3>
+            <p className="note-desc">
+              Diseñamos aplicaciones funcionales con interfaces intuitivas y fáciles de utilizar.
+            </p>
+            <div className="service-features-list">
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> UI moderna</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Experiencia de usuario</div>
+              <div className="service-feature-item"><span className="service-feature-check">✓</span> Diseño adaptable</div>
             </div>
-            <a href="#ver" className="service-btn">Ver servicio <span>→</span></a>
-          </div>
-
-          {}
-          <div className="service-card">
-            <div>
-              <div className="service-card-header">
-                <div className="service-icon-box">🔒</div>
-                <span className="service-number">05</span>
-              </div>
-              <div className="service-info" style={{ marginTop: '15px' }}>
-                <h3>Seguridad</h3>
-                <p>Implementamos buenas prácticas para proteger la información y los sistemas.</p>
-              </div>
-              <div className="service-divider"></div>
-              <div className="service-features">
-                <div className="feature-item"><span className="feature-check">✓</span> Protección de datos</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Control de acceso</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Buenas prácticas</div>
-              </div>
-            </div>
-            <a href="#ver" className="service-btn">Ver servicio <span>→</span></a>
-          </div>
-
-          {}
-          <div className="service-card">
-            <div>
-              <div className="service-card-header">
-                <div className="service-icon-box">📱</div>
-                <span className="service-number">06</span>
-              </div>
-              <div className="service-info" style={{ marginTop: '15px' }}>
-                <h3>Aplicaciones</h3>
-                <p>Diseñamos aplicaciones funcionales con interfaces intuitivas y fáciles de utilizar.</p>
-              </div>
-              <div className="service-divider"></div>
-              <div className="service-features">
-                <div className="feature-item"><span className="feature-check">✓</span> UI moderna</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Experiencia de usuario</div>
-                <div className="feature-item"><span className="feature-check">✓</span> Diseño adaptable</div>
-              </div>
-            </div>
-            <a href="#ver" className="service-btn">Ver servicio <span>→</span></a>
+            <a href="#ver" className="sticky-note-btn">
+              Ver servicio <span>→</span>
+            </a>
           </div>
         </div>
       </div>

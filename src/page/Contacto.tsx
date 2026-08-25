@@ -1,265 +1,292 @@
+import React from 'react';
+
 function Contact() {
   return (
-    <section className="page">
-      {}
+    <section className="hero-section">
       <style>{`
-        .contact-container {
-          display: flex;
-          flex-direction: column;
-          gap: 40px;
+        /* ENCABEZADO CONTACTO */
+        .contact-header-container {
+          max-width: 1000px;
+          text-align: center;
+          margin-bottom: 3.5rem;
         }
 
-        .contact-header {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .section-tag {
-          color: #f43f5e;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-        }
-
-        .contact-header h2 {
-          font-size: 38px;
+        .contact-tag {
+          font-size: 0.75rem;
           font-weight: 800;
-          color: #ffffff;
-          text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+          letter-spacing: 0.1em;
+          color: #db2777;
+          text-transform: uppercase;
+          display: inline-block;
+          margin-bottom: 0.5rem;
         }
 
-        .contact-header p {
-          color: #94a3b8;
-          font-size: 15px;
-        }
-
-        /* Cuadrícula principal de Contacto (2 columnas) */
-        .contact-grid {
+        /* GRID PRINCIPAL (2 COLUMNAS) */
+        .contact-notebook-grid {
           display: grid;
-          grid-template-columns: 1fr 1.5fr;
-          gap: 30px;
+          grid-template-columns: 1fr 1.4fr;
+          gap: 2.5rem;
+          max-width: 1000px;
+          width: 100%;
+          align-items: start;
         }
 
-        .contact-card, .form-card {
-          background: #16103a;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 20px;
-          padding: 35px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        /* TARJETA DE INFORMACIÓN (Estilo Sticky Note Grande) */
+        .contact-info-card {
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 1.25rem;
+          padding: 2rem;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+          position: relative;
+        }
+
+        .contact-card-title {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 0.25rem;
+        }
+
+        .contact-card-sub {
+          font-size: 0.85rem;
+          color: #64748b;
+          margin-bottom: 1.5rem;
+        }
+
+        .contact-divider-line {
+          height: 1px;
+          background: #f1f5f9;
+          margin: 1.25rem 0;
+          border: none;
+        }
+
+        .contact-info-list {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 1.25rem;
         }
 
-        .contact-info-group {
+        .contact-item-row {
           display: flex;
-          flex-direction: column;
-          gap: 15px;
-        }
-
-        .contact-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 15px;
+          align-items: center;
+          gap: 1rem;
         }
 
         .contact-icon-box {
-          width: 40px;
-          height: 40px;
-          background: #1e1b4b;
-          border: 1px solid rgba(168, 85, 247, 0.4);
-          border-radius: 10px;
+          width: 42px;
+          height: 42px;
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 0.75rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 18px;
+          font-size: 1.1rem;
           flex-shrink: 0;
         }
 
-        .contact-details span {
+        .contact-details-text span {
           display: block;
-          font-size: 12px;
-          color: #64748b;
-          margin-bottom: 2px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
-        .contact-details p {
-          font-size: 14px;
-          color: #ffffff;
-          font-weight: 500;
+        .contact-details-text p {
+          font-size: 0.95rem;
+          color: #1e293b;
+          font-weight: 600;
+          margin: 0;
         }
 
-        .contact-divider {
-          width: 100%;
-          height: 1px;
-          background: rgba(168, 85, 247, 0.2);
+        /* FORMULARIO ESTILO CUADERNO */
+        .contact-form-card {
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 1.25rem;
+          padding: 2.25rem;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+          position: relative;
         }
 
-        /* Estilos del formulario */
-        .form-group-row {
+        .form-row-2col {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 20px;
+          gap: 1.25rem;
         }
 
-        .form-group {
+        .form-field-group {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 0.4rem;
+          margin-bottom: 1.25rem;
         }
 
-        .form-group label {
-          font-size: 13px;
-          color: #cbd5e1;
-          font-weight: 500;
+        .form-field-group label {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #334155;
         }
 
-        .form-control {
-          background: #110d2b;
-          border: 1px solid rgba(168, 85, 247, 0.3);
-          border-radius: 10px;
-          padding: 12px 15px;
-          color: #ffffff;
-          font-size: 14px;
+        .notebook-input {
+          background-color: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 0.75rem;
+          padding: 0.75rem 1rem;
+          font-size: 0.9rem;
+          color: #0f172a;
           outline: none;
-          transition: all 0.2s ease;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          font-family: inherit;
         }
 
-        .form-control:focus {
-          border-color: #c084fc;
-          box-shadow: 0 0 10px rgba(192, 132, 252, 0.3);
+        .notebook-input:focus {
+          border-color: #9333ea;
+          box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.15);
+          background-color: #ffffff;
         }
 
-        textarea.form-control {
+        textarea.notebook-input {
           resize: vertical;
-          min-height: 120px;
+          min-height: 110px;
         }
 
-        .submit-btn {
-          background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+        .notebook-submit-btn {
+          width: 100%;
+          background-color: #0f172a;
           color: #ffffff;
           border: none;
-          padding: 14px 20px;
-          border-radius: 12px;
-          font-weight: 600;
-          font-size: 14px;
+          padding: 0.85rem 1.5rem;
+          border-radius: 0.75rem;
+          font-weight: 700;
+          font-size: 0.9rem;
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
           cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+          transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
         }
 
-        .submit-btn:hover {
-          opacity: 0.9;
-          box-shadow: 0 0 20px rgba(219, 39, 119, 0.6);
+        .notebook-submit-btn:hover {
+          background-color: #9333ea;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(147, 51, 234, 0.25);
         }
 
         @media (max-width: 900px) {
-          .contact-grid {
+          .contact-notebook-grid {
             grid-template-columns: 1fr;
           }
-          .form-group-row {
+          .form-row-2col {
             grid-template-columns: 1fr;
           }
         }
       `}</style>
 
-      <div className="contact-container">
-        {}
-        <div className="contact-header">
-          <span className="section-tag">PONTE EN CONTACTO</span>
-          <h2>Hablemos de tu proyecto</h2>
-          <p>Estamos aquí para escuchar tus ideas, resolver tus dudas y ayudarte a convertirlas en soluciones digitales.</p>
-        </div>
+      {/* Encabezado Principal */}
+      <div className="contact-header-container">
+        <span className="contact-tag">PONTE EN CONTACTO</span>
+        <h1 className="hero-title">
+          Hablemos de tu{" "}
+          <span className="inline-card shadow-purple">
+            <span className="badge badge-purple">Proyecto</span>
+            ✍️
+          </span>
+        </h1>
+        <p className="hero-subtitle">
+          Estamos aquí para escuchar tus ideas, resolver tus dudas y ayudarte a convertirlas en soluciones digitales.
+        </p>
+      </div>
 
-        {}
-        <div className="contact-grid">
-          {}
-          <div className="contact-card">
-            <div>
-              <h3>Información de contacto</h3>
-              <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>Encuentra diferentes formas de comunicarte con nosotros.</p>
+      {/* Grid de Contacto estilo Hoja de Cuaderno */}
+      <div className="contact-notebook-grid">
+        
+        {/* Columna Izquierda: Tarjeta de Datos con Chincheta Naranja */}
+        <div className="contact-info-card -rotate-1">
+          <div className="pin pin-orange"></div>
+          
+          <h3 className="contact-card-title">Información de contacto</h3>
+          <p className="contact-card-sub">Encuentra diferentes formas de comunicarte con nosotros.</p>
+          
+          <div className="contact-divider-line"></div>
+
+          <div className="contact-info-list">
+            <div className="contact-item-row">
+              <div className="contact-icon-box">✉️</div>
+              <div className="contact-details-text">
+                <span>Correo electrónico</span>
+                <p>contacto@proyecto.com</p>
+              </div>
             </div>
-            
-            <div className="contact-divider"></div>
 
-            <div className="contact-info-group">
-              <div className="contact-item">
-                <div className="contact-icon-box">✉️</div>
-                <div className="contact-details">
-                  <span>Correo electrónico</span>
-                  <p>contacto@proyecto.com</p>
-                </div>
+            <div className="contact-item-row">
+              <div className="contact-icon-box">📞</div>
+              <div className="contact-details-text">
+                <span>Teléfono</span>
+                <p>+51 990 326 787</p>
               </div>
+            </div>
 
-              <div className="contact-item">
-                <div className="contact-icon-box">📞</div>
-                <div className="contact-details">
-                  <span>Teléfono</span>
-                  <p>+51 990 326 787</p>
-                </div>
+            <div className="contact-item-row">
+              <div className="contact-icon-box">📍</div>
+              <div className="contact-details-text">
+                <span>Ubicación</span>
+                <p>Lima, Perú</p>
               </div>
+            </div>
 
-              <div className="contact-item">
-                <div className="contact-icon-box">📍</div>
-                <div className="contact-details">
-                  <span>Ubicación</span>
-                  <p>Lima, Perú</p>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <div className="contact-icon-box">⏰</div>
-                <div className="contact-details">
-                  <span>Horario</span>
-                  <p>Lunes - Viernes, 9:00 - 18:00</p>
-                </div>
+            <div className="contact-item-row">
+              <div className="contact-icon-box">⏰</div>
+              <div className="contact-details-text">
+                <span>Horario</span>
+                <p>Lunes - Viernes, 9:00 - 18:00</p>
               </div>
             </div>
           </div>
+        </div>
 
-          {}
-          <div className="form-card">
-            <div>
-              <span className="section-tag">ENVÍANOS UN MENSAJE</span>
-              <h3 style={{ fontSize: '22px', color: '#ffffff', marginTop: '5px' }}>Cuéntanos qué necesitas</h3>
-              <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>Completa el formulario y nos pondremos en contacto contigo.</p>
+        {/* Columna Derecha: Formulario con Chincheta Azul */}
+        <div className="contact-form-card rotate-1">
+          <div className="pin pin-blue"></div>
+
+          <span className="contact-tag">ENVÍANOS UN MENSAJE</span>
+          <h3 className="contact-card-title">Cuéntanos qué necesitas</h3>
+          <p className="contact-card-sub">Completa el formulario y nos pondremos en contacto contigo.</p>
+          
+          <div className="contact-divider-line"></div>
+
+          <form onSubmit={(e) => e.preventDefault()}>
+            <div className="form-row-2col">
+              <div className="form-field-group">
+                <label>Nombre</label>
+                <input type="text" className="notebook-input" placeholder="Tu nombre" />
+              </div>
+              <div className="form-field-group">
+                <label>Correo electrónico</label>
+                <input type="email" className="notebook-input" placeholder="correo@ejemplo.com" />
+              </div>
             </div>
 
-            <div className="contact-divider"></div>
+            <div className="form-field-group">
+              <label>Asunto</label>
+              <input type="text" className="notebook-input" placeholder="¿En qué podemos ayudarte?" />
+            </div>
 
-            <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="form-group-row">
-                <div className="form-group">
-                  <label>Nombre</label>
-                  <input type="text" className="form-control" placeholder="Tu nombre" />
-                </div>
-                <div className="form-group">
-                  <label>Correo electrónico</label>
-                  <input type="email" className="form-control" placeholder="correo@ejemplo.com" />
-                </div>
-              </div>
+            <div className="form-field-group">
+              <label>Mensaje</label>
+              <textarea className="notebook-input" placeholder="Escribe tu mensaje..."></textarea>
+            </div>
 
-              <div className="form-group">
-                <label>Asunto</label>
-                <input type="text" className="form-control" placeholder="¿En qué podemos ayudarte?" />
-              </div>
-
-              <div className="form-group">
-                <label>Mensaje</label>
-                <textarea className="form-control" placeholder="Escribe tu mensaje..."></textarea>
-              </div>
-
-              <button type="submit" className="submit-btn">
-                Enviar mensaje <span>→</span>
-              </button>
-            </form>
-          </div>
+            <button type="submit" className="notebook-submit-btn">
+              Enviar mensaje <span>→</span>
+            </button>
+          </form>
         </div>
+
       </div>
     </section>
   );

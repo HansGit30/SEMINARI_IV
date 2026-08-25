@@ -1,219 +1,227 @@
+import React from 'react';
+
 function About() {
   return (
-    <section className="page">
-      {}
+    <section className="hero-section">
       <style>{`
-        .about-container {
-          display: flex;
-          flex-direction: column;
-          gap: 50px;
+        /* ENCABEZADO ABOUT */
+        .about-header-container {
+          max-width: 1000px;
+          text-align: center;
+          margin-bottom: 4rem;
         }
 
-        .about-header {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .section-tag {
-          color: #f43f5e;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 1px;
+        .about-tag {
+          font-size: 0.75rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          color: #9333ea;
           text-transform: uppercase;
+          display: inline-block;
+          margin-bottom: 0.5rem;
         }
 
-        .about-card-large, .about-card-medium, .about-banner {
-          background: #16103a;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 20px;
-          padding: 35px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        /* BANNER FINAL */
+        .about-banner-card {
+          margin-top: 5rem;
+          width: 100%;
+          max-width: 900px;
+          background: #ffffff;
+          border-radius: 1.25rem;
+          padding: 2.5rem;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+          text-align: center;
+          position: relative;
+        }
+
+        .about-banner-title {
+          font-size: 2rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 0.75rem;
+        }
+
+        /* SECCIÓN TECNOLOGÍAS */
+        .tech-container {
+          margin-top: 5rem;
+          width: 100%;
+          max-width: 900px;
+          text-align: center;
+        }
+
+        .tech-badges-list {
           display: flex;
-          flex-direction: column;
-          gap: 15px;
+          justify-content: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin-top: 1.5rem;
         }
 
-        .about-card-large h3, .about-card-medium h3, .about-header h2, .values-header h2, .tech-header h2, .about-banner h3 {
-          font-size: 28px;
+        .tech-pill {
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          padding: 0.5rem 1.25rem;
+          border-radius: 9999px;
+          font-size: 0.875rem;
           font-weight: 700;
-          background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+          color: #1e293b;
+          box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+          transition: transform 0.2s ease;
         }
 
-        .about-card-large p, .about-card-medium p, .about-header p, .values-header p, .tech-header p, .about-banner p {
-          color: #94a3b8;
-          font-size: 14px;
-          line-height: 1.6;
+        .tech-pill:hover {
+          transform: translateY(-2px);
         }
 
-        .about-grid-two {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 30px;
-        }
-
-        /* Cuadrícula de 4 valores */
-        .values-grid {
+        /* EXTENSIÓN PARA GRID DE 4 VALORES */
+        .values-notes-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
-        }
-
-        .value-card {
-          background: #16103a;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 16px;
-          padding: 25px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .value-card h4 {
-          color: #ffffff;
-          font-size: 16px;
-          font-weight: 600;
-        }
-
-        .value-card p {
-          font-size: 13px;
-          color: #94a3b8;
-        }
-
-        /* Sección de tecnologías */
-        .tech-section {
-          background: #16103a;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 20px;
-          padding: 35px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .tech-content-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 20px;
-        }
-
-        .tech-badges {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .tech-badge {
-          background: #1e1b4b;
-          border: 1px solid rgba(168, 85, 247, 0.4);
-          color: #cbd5e1;
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 500;
+          gap: 1.5rem;
+          max-width: 1100px;
+          width: 100%;
+          margin-top: 2rem;
         }
 
         @media (max-width: 900px) {
-          .values-grid {
-            grid-template-columns: 1fr 1fr;
+          .values-notes-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
-          .about-grid-two {
+        }
+
+        @media (max-width: 550px) {
+          .values-notes-grid {
             grid-template-columns: 1fr;
           }
         }
       `}</style>
 
-      <div className="about-container">
-        {}
-        <div className="about-header">
-          <span className="section-tag">SOBRE NOSOTROS</span>
-          <h2>Conoce nuestro proyecto</h2>
-          <p>Somos un equipo enfocado en crear soluciones digitales modernas, eficientes y fáciles de utilizar.</p>
-        </div>
+      {/* 1. Encabezado principal */}
+      <div className="about-header-container">
+        <span className="about-tag">SOBRE NOSOTROS</span>
+        <h1 className="hero-title">
+          Conoce nuestro{" "}
+          <span className="inline-card shadow-purple">
+            <span className="badge badge-purple">Proyecto</span>
+            🚀
+          </span>{" "}
+          y al equipo que lo impulsa.
+        </h1>
+        <p className="hero-subtitle">
+          Somos un equipo enfocado en crear soluciones digitales modernas, eficientes y fáciles de utilizar.
+        </p>
+      </div>
 
-        {}
-        <div className="about-card-large">
-          <div className="card-icon">🚀</div>
-          <h3>¿Quiénes somos?</h3>
-          <p>Somos un equipo de estudiantes y desarrolladores interesados en la tecnología, el desarrollo de software y la creación de experiencias digitales. Nuestro proyecto busca combinar funcionalidad, diseño y tecnología para ofrecer una plataforma útil y sencilla.</p>
-          <p>Trabajamos utilizando herramientas modernas de desarrollo web y aplicando buenas prácticas para construir una aplicación organizada, responsive y fácil de mantener.</p>
-        </div>
-
-        {}
-        <div className="about-grid-two">
-          <div className="about-card-medium">
-            <div className="card-icon">🎯</div>
-            <h3>Nuestra misión</h3>
-            <p>Crear soluciones tecnológicas que permitan gestionar información de manera rápida, organizada y eficiente, brindando una experiencia agradable para nuestros usuarios.</p>
-          </div>
-          <div className="about-card-medium">
-            <div className="card-icon">🔭</div>
-            <h3>Nuestra visión</h3>
-            <p>Convertir nuestro proyecto en una plataforma moderna, escalable y confiable que pueda adaptarse a las necesidades de diferentes usuarios y organizaciones.</p>
+      {/* 2. Tarjeta principal: ¿Quiénes somos? */}
+      <div className="notes-grid" style={{ maxWidth: '900px', marginBottom: '4rem' }}>
+        <div className="sticky-note -rotate-2" style={{ gridColumn: '1 / -1' }}>
+          <div className="pin pin-purple"></div>
+          <div className="note-content purple">
+            <span className="note-number">🚀</span>
+            <h3 className="note-title" style={{ fontSize: '1.75rem' }}>¿Quiénes somos?</h3>
+            <p className="note-desc" style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>
+              Somos un equipo de estudiantes y desarrolladores interesados en la tecnología, el desarrollo de software y la creación de experiencias digitales. Nuestro proyecto busca combinar funcionalidad, diseño y tecnología para ofrecer una plataforma útil y sencilla.
+            </p>
+            <p className="note-desc" style={{ fontSize: '1rem' }}>
+              Trabajamos utilizando herramientas modernas de desarrollo web y aplicando buenas prácticas para construir una aplicación organizada, responsive y fácil de mantener.
+            </p>
           </div>
         </div>
+      </div>
 
-        {}
-        <div className="about-header" style={{ gap: '15px' }}>
-          <div>
-            <span className="section-tag">NUESTROS VALORES</span>
-            <h2>Lo que nos representa</h2>
-          </div>
-          <p>Principios que guían nuestro trabajo y desarrollo.</p>
-        </div>
-
-        <div className="values-grid">
-          <div className="value-card">
-            <div className="card-icon">💡</div>
-            <h4>Innovación</h4>
-            <p>Buscamos nuevas ideas y formas de mejorar nuestras soluciones.</p>
-          </div>
-          <div className="value-card">
-            <div className="card-icon">💛</div>
-            <h4>Trabajo en equipo</h4>
-            <p>Colaboramos para alcanzar objetivos y resolver problemas.</p>
-          </div>
-          <div className="value-card">
-            <div className="card-icon">⚡</div>
-            <h4>Eficiencia</h4>
-            <p>Desarrollamos soluciones rápidas, organizadas y funcionales.</p>
-          </div>
-          <div className="value-card">
-            <div className="card-icon">🛡️</div>
-            <h4>Responsabilidad</h4>
-            <p>Nos comprometemos con la calidad y seguridad de nuestro proyecto.</p>
+      {/* 3. Misión y Visión (Grid de 2 columnas) */}
+      <div className="notes-grid">
+        <div className="sticky-note -rotate-3">
+          <div className="pin pin-orange"></div>
+          <div className="note-content orange">
+            <span className="note-number">🎯</span>
+            <h3 className="note-title">Nuestra misión</h3>
+            <p className="note-desc">
+              Crear soluciones tecnológicas que permitan gestionar información de manera rápida, organizada y eficiente, brindando una experiencia agradable para nuestros usuarios.
+            </p>
           </div>
         </div>
 
-        {}
-        <div className="tech-section">
-          <div>
-            <span className="section-tag">TECNOLOGÍA</span>
-            <h2>Herramientas que utilizamos</h2>
+        <div className="sticky-note rotate-2">
+          <div className="pin pin-blue"></div>
+          <div className="note-content blue">
+            <span className="note-number">🔭</span>
+            <h3 className="note-title">Nuestra visión</h3>
+            <p className="note-desc">
+              Convertir nuestro proyecto en una plataforma moderna, escalable y confiable que pueda adaptarse a las necesidades de diferentes usuarios y organizaciones.
+            </p>
           </div>
-          <div className="tech-content-row">
-            <p>Nuestro proyecto se desarrolla utilizando tecnologías actuales para crear una experiencia moderna y funcional.</p>
-            <div className="tech-badges">
-              <span className="tech-badge">React</span>
-              <span className="tech-badge">TypeScript</span>
-              <span className="tech-badge">CSS</span>
-              <span className="tech-badge">JavaScript</span>
-              <span className="tech-badge">HTML</span>
-            </div>
+        </div>
+      </div>
+
+      {/* 4. Nuestros Valores (Grid de 4 notas adhesivas) */}
+      <div className="about-header-container" style={{ marginTop: '5rem', marginBottom: '1rem' }}>
+        <span className="about-tag">NUESTROS VALORES</span>
+        <h2 className="hero-title" style={{ fontSize: '2.5rem' }}>Lo que nos representa</h2>
+        <p className="hero-subtitle" style={{ marginTop: '0.5rem' }}>Principios que guían nuestro trabajo y desarrollo.</p>
+      </div>
+
+      <div className="values-notes-grid">
+        <div className="sticky-note -rotate-3">
+          <div className="pin pin-orange"></div>
+          <div className="note-content orange">
+            <span className="note-number">💡</span>
+            <h3 className="note-title" style={{ fontSize: '1.1rem' }}>Innovación</h3>
+            <p className="note-desc">Buscamos nuevas ideas y formas de mejorar nuestras soluciones.</p>
           </div>
         </div>
 
-        {}
-        <div className="about-banner">
-          <div className="card-icon">✨</div>
-          <h3>Construimos pensando en el futuro</h3>
-          <p>Cada parte del proyecto representa nuestro aprendizaje, creatividad y compromiso con el desarrollo de soluciones tecnológicas.</p>
+        <div className="sticky-note rotate-2">
+          <div className="pin pin-purple"></div>
+          <div className="note-content purple">
+            <span className="note-number">💛</span>
+            <h3 className="note-title" style={{ fontSize: '1.1rem' }}>Trabajo en equipo</h3>
+            <p className="note-desc">Colaboramos para alcanzar objetivos y resolver problemas.</p>
+          </div>
         </div>
+
+        <div className="sticky-note -rotate-2">
+          <div className="pin pin-blue"></div>
+          <div className="note-content blue">
+            <span className="note-number">⚡</span>
+            <h3 className="note-title" style={{ fontSize: '1.1rem' }}>Eficiencia</h3>
+            <p className="note-desc">Desarrollamos soluciones rápidas, organizadas y funcionales.</p>
+          </div>
+        </div>
+
+        <div className="sticky-note rotate-3">
+          <div className="pin pin-orange"></div>
+          <div className="note-content orange">
+            <span className="note-number">🛡️</span>
+            <h3 className="note-title" style={{ fontSize: '1.1rem' }}>Responsabilidad</h3>
+            <p className="note-desc">Nos comprometemos con la calidad y seguridad de nuestro proyecto.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Tecnologías utilizadas */}
+      <div className="tech-container">
+        <span className="about-tag">TECNOLOGÍA</span>
+        <h2 className="hero-title" style={{ fontSize: '2.25rem' }}>Herramientas que utilizamos</h2>
+        <p className="hero-subtitle" style={{ marginTop: '0.5rem' }}>
+          Nuestro proyecto se desarrolla utilizando tecnologías actuales para crear una experiencia moderna y funcional.
+        </p>
+        <div className="tech-badges-list">
+          <span className="tech-pill">React</span>
+          <span className="tech-pill">TypeScript</span>
+          <span className="tech-pill">CSS3</span>
+          <span className="tech-pill">JavaScript</span>
+          <span className="tech-pill">HTML5</span>
+        </div>
+      </div>
+
+      {/* 6. Banner de Cierre */}
+      <div className="about-banner-card">
+        <div className="pin pin-purple"></div>
+        <h3 className="about-banner-title">✨ Construimos pensando en el futuro</h3>
+        <p className="hero-subtitle" style={{ marginTop: 0 }}>
+          Cada parte del proyecto representa nuestro aprendizaje, creatividad y compromiso con el desarrollo de soluciones tecnológicas.
+        </p>
       </div>
     </section>
   );
