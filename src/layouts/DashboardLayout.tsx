@@ -51,7 +51,7 @@ export default function DashboardLayout(): React.ReactElement {
   }, []);
 
   const mainItems: MenuItem[] = [
-    { name: "INICIO", icon: "🏠", path: "/dashboard" },
+    { name: "INICIO", icon: "🏠", path: "/dashboard/home" },
     { name: "PANDAS", icon: "📦", path: "/dashboard/pandas" },
     { name: "NUMPY", icon: "🔧", path: "/dashboard/numpy", hasArrow: true },
     { name: "REPORTES", icon: "⛽", path: "/dashboard/reportes", hasArrow: true },
