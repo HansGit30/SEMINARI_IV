@@ -1,25 +1,161 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import * as tmPose from "@teachablemachine/pose";
 
-// Enlace actualizado de tu modelo de Teachable Machine
 const MODEL_URL = "https://teachablemachine.withgoogle.com/models/THOqcJHid/";
+
+interface Prediction {
+  className: string;
+  probability: number;
+}
 
 interface HistoryItem {
   id: string;
   imageSrc: string;
-  predictions: { className: string; probability: number }[];
+  predictions: Prediction[];
 }
 
 export const Postura: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [livePredictions, setLivePredictions] = useState<Prediction[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Procesar imagen con el modelo @teachablemachine/pose y dibujar el esqueleto
+  const modelRef = useRef<tmPose.CustomPoseNet | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+
+  // 1. Cargar el modelo solo una vez al montar el componente
+  useEffect(() => {
+    const loadModel = async () => {
+      try {
+        const model = await tmPose.load(
+          MODEL_URL + "model.json",
+          MODEL_URL + "metadata.json"
+        );
+        modelRef.current = model;
+      } catch (err) {
+        console.error("Error al cargar el modelo de Teachable Machine:", err);
+      }
+    };
+    loadModel();
+
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // 2. Bucle de predicción continua para la cámara en vivo
+  const predictWebcamFrame = async () => {
+    if (
+      !modelRef.current ||
+      !videoRef.current ||
+      !canvasRef.current ||
+      videoRef.current.readyState !== 4
+    ) {
+      animationFrameIdRef.current = requestAnimationFrame(predictWebcamFrame);
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Ajustar resolución del canvas a las dimensiones reales del video
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+
+    // Estimar la postura actual del frame
+    const { pose, posenetOutput } = await modelRef.current.estimatePose(video);
+    const predictions = await modelRef.current.predict(posenetOutput);
+
+    // Actualizar predicciones en vivo en la interfaz
+    setLivePredictions(predictions);
+
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (pose && pose.keypoints) {
+        const minPartConfidence = 0.5;
+        tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx, 4, "#3b82f6");
+        tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx, 6, "#3b82f6", "#ffffff");
+      }
+    }
+
+    animationFrameIdRef.current = requestAnimationFrame(predictWebcamFrame);
+  };
+
+  // Encender cámara e iniciar el bucle en tiempo real
+  const startCamera = async () => {
+    try {
+      setLoading(true);
+      if (!modelRef.current) {
+        modelRef.current = await tmPose.load(
+          MODEL_URL + "model.json",
+          MODEL_URL + "metadata.json"
+        );
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      setIsCameraActive(true);
+
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().then(() => {
+            animationFrameIdRef.current = requestAnimationFrame(predictWebcamFrame);
+          });
+        }
+      }, 100);
+    } catch (err) {
+      alert("No se pudo acceder a la cámara web.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Capturar la imagen congelada del bucle en el historial
+  const capturePhoto = () => {
+    if (!canvasRef.current || livePredictions.length === 0) return;
+
+    const imageSrc = canvasRef.current.toDataURL("image/png");
+
+    setHistory((prev) => [
+      {
+        id: Date.now().toString(),
+        imageSrc,
+        predictions: [...livePredictions],
+      },
+      ...prev,
+    ]);
+
+    stopCamera();
+  };
+
+  // Detener cámara y cancelar frame de animación
+  const stopCamera = () => {
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    setIsCameraActive(false);
+    setLivePredictions([]);
+  };
+
+  // Subir y analizar una imagen estática
   const processImageSrc = async (src: string) => {
     setLoading(true);
     const imgElement = new Image();
@@ -28,19 +164,16 @@ export const Postura: React.FC = () => {
 
     imgElement.onload = async () => {
       try {
-        // 1. Cargar el modelo de postura con los archivos oficiales
-        const model = await tmPose.load(
-          MODEL_URL + "model.json",
-          MODEL_URL + "metadata.json"
-        );
+        if (!modelRef.current) {
+          modelRef.current = await tmPose.load(
+            MODEL_URL + "model.json",
+            MODEL_URL + "metadata.json"
+          );
+        }
 
-        // 2. Estimar la pose
-        const { pose, posenetOutput } = await model.estimatePose(imgElement);
+        const { pose, posenetOutput } = await modelRef.current.estimatePose(imgElement);
+        const results = await modelRef.current.predict(posenetOutput);
 
-        // 3. Realizar la predicción usando posenetOutput
-        const results = await model.predict(posenetOutput);
-
-        // 4. Configurar dimensiones del canvas utilizando el elemento persistente o uno nuevo bien dimensionado
         const width = imgElement.naturalWidth || 640;
         const height = imgElement.naturalHeight || 480;
 
@@ -50,22 +183,14 @@ export const Postura: React.FC = () => {
         const ctx = canvas.getContext("2d");
 
         if (ctx) {
-          // Dibujar la imagen base en el canvas
           ctx.drawImage(imgElement, 0, 0, width, height);
-
-          // 5. Dibujar esqueleto y puntos clave si se detecta una pose
           if (pose && pose.keypoints) {
-            const minPartConfidence = 0.2; // Umbral de confianza para detección rápida
-            
-            // Dibujar líneas del esqueleto (ancho: 4, color: azul brillante)
+            const minPartConfidence = 0.5;
             tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx, 4, "#3b82f6");
-            
-            // Dibujar puntos clave (radio: 6, color interno: azul, borde: blanco)
             tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx, 6, "#3b82f6", "#ffffff");
           }
         }
 
-        // Obtener la imagen final resultante con el esqueleto pintado
         const processedImageSrc = canvas.toDataURL("image/png");
 
         setHistory((prev) => [
@@ -77,14 +202,13 @@ export const Postura: React.FC = () => {
           ...prev,
         ]);
       } catch (err) {
-        console.error("Error al analizar la postura con el modelo:", err);
+        console.error("Error al analizar la postura:", err);
       } finally {
         setLoading(false);
       }
     };
   };
 
-  // Subir imagen local
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -98,60 +222,8 @@ export const Postura: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // Encender cámara
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      streamRef.current = stream;
-      setIsCameraActive(true);
-
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch((e) => console.error("Error al reproducir video:", e));
-        }
-      }, 100);
-    } catch (err) {
-      alert("No se pudo acceder a la cámara web.");
-      console.error(err);
-    }
-  };
-
-  // Capturar foto desde la cámara pintando también el esqueleto en tiempo real si se desea
-  const capturePhoto = async () => {
-    if (!videoRef.current) return;
-    
-    const video = videoRef.current;
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 480;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, width, height);
-      const imageSrc = canvas.toDataURL("image/png");
-      
-      // Detenemos la cámara y procesamos la foto capturada
-      stopCamera();
-      processImageSrc(imageSrc);
-    }
-  };
-
-  // Apagar cámara
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setIsCameraActive(false);
-  };
-
   return (
     <div style={styles.container}>
-      {/* Encabezado Hero */}
       <header style={styles.heroHeader}>
         <div style={styles.badgeTop}>
           <span style={{ color: "#b4f461" }}>⚡</span> INTELIGENCIA ARTIFICIAL
@@ -167,21 +239,45 @@ export const Postura: React.FC = () => {
         </p>
       </header>
 
-      {/* Visor de Cámara */}
+      {/* Visor de Cámara con Detección Continua */}
       {isCameraActive && (
         <div style={styles.cameraBox}>
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            style={styles.videoPreview} 
-          />
-          <canvas ref={canvasRef} style={{ display: "none" }} />
-          
+          <div style={{ position: "relative", width: "100%", height: "100%" }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ display: "none" }}
+            />
+            <canvas ref={canvasRef} style={styles.videoPreview} />
+          </div>
+
+          {/* Porcentajes en Vivo */}
+          <div style={{ width: "100%", backgroundColor: "#0b0f19", padding: "12px", borderRadius: "12px" }}>
+            <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#94a3b8" }}>Detección en tiempo real:</h4>
+            {livePredictions.map((p, i) => (
+              <div key={i} style={{ marginBottom: "6px" }}>
+                <div style={styles.predMeta}>
+                  <span>{p.className}</span>
+                  <strong>{(p.probability * 100).toFixed(0)}%</strong>
+                </div>
+                <div style={styles.progressBarBg}>
+                  <div
+                    style={{
+                      ...styles.progressBarFill,
+                      width: `${(p.probability * 100).toFixed(0)}%`,
+                      backgroundColor: p.probability > 0.5 ? "#b4f461" : "#3b82f6",
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div style={styles.cameraControls}>
-            <button style={styles.captureBtn} onClick={capturePhoto} disabled={loading}>
-              📸 {loading ? "Analizando..." : "Tomar Foto"}
+            <button style={styles.captureBtn} onClick={capturePhoto}>
+              📸 Guardar Resultado
             </button>
             <button style={styles.closeCamBtn} onClick={stopCamera}>
               ✖️ Cancelar
@@ -190,14 +286,14 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Selección: Cargar Imagen / Cámara */}
+      {/* Acciones */}
       {!isCameraActive && (
         <div style={styles.actionContainer}>
           <div style={styles.uploadCard}>
             <label htmlFor="file-upload" style={styles.uploadLabel}>
               <span style={{ fontSize: "32px" }}>📁</span>
               <span style={{ fontWeight: "600", fontSize: "16px" }}>
-                {loading ? "Procesando esqueleto..." : "Haz clic para subir foto de postura"}
+                {loading ? "Procesando postura..." : "Haz clic para subir foto de postura"}
               </span>
               <span style={{ fontSize: "13px", color: "#94a3b8" }}>Formatos: JPG, PNG, WEBP</span>
             </label>
@@ -216,12 +312,12 @@ export const Postura: React.FC = () => {
           <button style={styles.webcamBtn} onClick={startCamera} disabled={loading}>
             <span style={{ fontSize: "28px" }}>📹</span>
             <span style={{ fontWeight: "600", fontSize: "16px" }}>Usar Cámara Web</span>
-            <span style={{ fontSize: "13px", color: "#94a3b8" }}>Captura en tiempo real</span>
+            <span style={{ fontSize: "13px", color: "#94a3b8" }}>Análisis en tiempo real</span>
           </button>
         </div>
       )}
 
-      {/* Historial de Resultados con Puntos Clave Pintados */}
+      {/* Historial */}
       <div style={styles.gridContainer}>
         {history.map((item) => {
           const topPrediction = [...item.predictions].sort((a, b) => b.probability - a.probability)[0];
@@ -229,7 +325,7 @@ export const Postura: React.FC = () => {
           return (
             <div key={item.id} style={styles.card}>
               <div style={styles.imageContainer}>
-                <img src={item.imageSrc} alt="Analizada con Esqueleto" style={styles.cardImage} />
+                <img src={item.imageSrc} alt="Analizada" style={styles.cardImage} />
                 <div style={styles.imageOverlay} />
                 {topPrediction && (
                   <div style={styles.topBadge}>
@@ -240,7 +336,7 @@ export const Postura: React.FC = () => {
               </div>
 
               <div style={styles.cardBody}>
-                <h4 style={styles.cardTitle}>Resultados de Postura</h4>
+                <h4 style={styles.cardTitle}>Resultados Guardados</h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {item.predictions.map((p, idx) => {
                     const percentage = (p.probability * 100).toFixed(1);
@@ -382,7 +478,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   cameraBox: {
-    maxWidth: "500px",
+    maxWidth: "520px",
     margin: "0 auto 40px auto",
     backgroundColor: "#161e2e",
     borderRadius: "20px",
@@ -491,7 +587,7 @@ const styles: Record<string, React.CSSProperties> = {
   progressBarFill: {
     height: "100%",
     borderRadius: "9999px",
-    transition: "width 0.4s ease-in-out",
+    transition: "width 0.2s ease-in-out",
   },
 };
 
