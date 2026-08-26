@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as tmPose from "@teachablemachine/pose";
 
-const MODEL_URL = "https://teachablemachine.withgoogle.com/models/THOqcJHid/";
+const MODEL_URL = "/my-model-postura/";
 
 interface Prediction {
   className: string;
