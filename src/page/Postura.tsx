@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as tmPose from "@teachablemachine/pose";
 
-// Ruta apuntando a la carpeta local dentro de /public
+// Ruta a tus archivos locales descargados en /public/my-model/
 const MODEL_URL = "/my-model-postura/";
 
 interface Prediction {
@@ -46,10 +46,10 @@ export const Postura: React.FC = () => {
     };
   }, []);
 
-  // Bucle de detección continuo
+  // Bucle continuo de fotogramas
   const loop = async () => {
     if (webcamRef.current) {
-      webcamRef.current.update();
+      webcamRef.current.update(); // Actualiza el frame de la camara
       await predict();
       animationFrameRef.current = requestAnimationFrame(loop);
     }
@@ -58,6 +58,7 @@ export const Postura: React.FC = () => {
   const predict = async () => {
     if (!webcamRef.current || !modelRef.current || !ctxRef.current) return;
 
+    // 1. Estimar pose actual
     const { pose, posenetOutput } = await modelRef.current.estimatePose(
       webcamRef.current.canvas
     );
@@ -65,14 +66,15 @@ export const Postura: React.FC = () => {
 
     setLivePredictions(prediction);
 
-    // Dibujar imagen de la cámara en el canvas
-    ctxRef.current.drawImage(webcamRef.current.canvas, 0, 0);
+    // 2. Dibujar imagen del fotograma de la webcam
+    const canvas = webcamRef.current.canvas;
+    ctxRef.current.drawImage(canvas, 0, 0, canvas.width, canvas.height);
 
-    // Superponer nodos y esqueleto de postura
+    // 3. Superponer nodos y esqueleto
     if (pose) {
-      const minConfidence = 0.5;
-      tmPose.drawKeypoints(pose.keypoints, minConfidence, ctxRef.current);
-      tmPose.drawSkeleton(pose.keypoints, minConfidence, ctxRef.current);
+      const minPartConfidence = 0.2; // Umbral flexible para asegurar dibujado constante
+      tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctxRef.current);
+      tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctxRef.current);
     }
   };
 
@@ -95,10 +97,12 @@ export const Postura: React.FC = () => {
       await webcam.play();
       webcamRef.current = webcam;
 
-      // Esperar a que React monte el contenedor en el DOM
+      // Inyección segura del Canvas al DOM tras renderizado de React
       requestAnimationFrame(() => {
         if (canvasContainerRef.current && webcam.canvas) {
           canvasContainerRef.current.innerHTML = "";
+          
+          webcam.canvas.style.display = "block";
           webcam.canvas.style.width = "100%";
           webcam.canvas.style.height = "auto";
           webcam.canvas.style.borderRadius = "12px";
@@ -106,6 +110,7 @@ export const Postura: React.FC = () => {
           canvasContainerRef.current.appendChild(webcam.canvas);
           ctxRef.current = webcam.canvas.getContext("2d");
 
+          // Iniciar bucle de detección
           animationFrameRef.current = requestAnimationFrame(loop);
         }
       });
@@ -121,6 +126,7 @@ export const Postura: React.FC = () => {
   const capturePhoto = () => {
     if (!webcamRef.current || livePredictions.length === 0) return;
 
+    // Guarda captura actual con el esqueleto dibujado
     const snapshot = webcamRef.current.canvas.toDataURL("image/png");
 
     setHistory((prev) => [
@@ -192,8 +198,8 @@ export const Postura: React.FC = () => {
         if (ctx) {
           ctx.drawImage(imgElement, 0, 0, width, height);
           if (pose) {
-            tmPose.drawKeypoints(pose.keypoints, 0.5, ctx);
-            tmPose.drawSkeleton(pose.keypoints, 0.5, ctx);
+            tmPose.drawKeypoints(pose.keypoints, 0.2, ctx);
+            tmPose.drawSkeleton(pose.keypoints, 0.2, ctx);
           }
         }
 
@@ -221,11 +227,11 @@ export const Postura: React.FC = () => {
           Análisis de <span style={{ color: "#ffffff" }}>Postura Corporal</span> 🧍
         </h1>
         <p style={styles.heroSubtitle}>
-          Detección local en tiempo real usando los archivos del modelo.
+          Detección en tiempo real del esqueleto y puntos de articulación.
         </p>
       </header>
 
-      {/* Contenedor de cámara activa */}
+      {/* Visor de cámara en vivo */}
       {isCameraActive && (
         <div style={styles.cameraBox}>
           <div ref={canvasContainerRef} style={{ width: "100%", borderRadius: "12px", overflow: "hidden" }} />
@@ -262,7 +268,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Botones de entrada */}
+      {/* Acciones principales */}
       {!isCameraActive && (
         <div style={styles.actionContainer}>
           <div style={styles.uploadCard}>
@@ -291,7 +297,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Tarjetas de resultados */}
+      {/* Galería de capturas guardadas */}
       <div style={styles.gridContainer}>
         {history.map((item) => {
           const topPrediction = [...item.predictions].sort((a, b) => b.probability - a.probability)[0];
