@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as tmPose from "@teachablemachine/pose";
 
+// Ruta apuntando a la carpeta local dentro de /public
 const MODEL_URL = "/my-model-postura/";
 
 interface Prediction {
@@ -27,6 +28,7 @@ export const Postura: React.FC = () => {
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   useEffect(() => {
+    // Carga inicial del modelo local
     const loadModel = async () => {
       try {
         modelRef.current = await tmPose.load(
@@ -34,7 +36,7 @@ export const Postura: React.FC = () => {
           MODEL_URL + "metadata.json"
         );
       } catch (err) {
-        console.error("Error al cargar modelo:", err);
+        console.error("Error al cargar el modelo local:", err);
       }
     };
     loadModel();
@@ -44,10 +46,10 @@ export const Postura: React.FC = () => {
     };
   }, []);
 
-  // Bucle identico a tu script de HTML vanilla
+  // Bucle de detección continuo
   const loop = async () => {
     if (webcamRef.current) {
-      webcamRef.current.update(); // Actualiza cuadro de la cámara
+      webcamRef.current.update();
       await predict();
       animationFrameRef.current = requestAnimationFrame(loop);
     }
@@ -63,10 +65,10 @@ export const Postura: React.FC = () => {
 
     setLivePredictions(prediction);
 
-    // Dibuja la camara en el Canvas
+    // Dibujar imagen de la cámara en el canvas
     ctxRef.current.drawImage(webcamRef.current.canvas, 0, 0);
 
-    // Superpone el esqueleto y los nodos rojos
+    // Superponer nodos y esqueleto de postura
     if (pose) {
       const minConfidence = 0.5;
       tmPose.drawKeypoints(pose.keypoints, minConfidence, ctxRef.current);
@@ -77,6 +79,8 @@ export const Postura: React.FC = () => {
   const startCamera = async () => {
     try {
       setLoading(true);
+      setIsCameraActive(true);
+
       if (!modelRef.current) {
         modelRef.current = await tmPose.load(
           MODEL_URL + "model.json",
@@ -91,24 +95,24 @@ export const Postura: React.FC = () => {
       await webcam.play();
       webcamRef.current = webcam;
 
-      setIsCameraActive(true);
-
-      // Inyectar el canvas nativo de Teachable Machine al DOM manteniéndolo responsivo
-      setTimeout(() => {
+      // Esperar a que React monte el contenedor en el DOM
+      requestAnimationFrame(() => {
         if (canvasContainerRef.current && webcam.canvas) {
           canvasContainerRef.current.innerHTML = "";
           webcam.canvas.style.width = "100%";
           webcam.canvas.style.height = "auto";
           webcam.canvas.style.borderRadius = "12px";
+
           canvasContainerRef.current.appendChild(webcam.canvas);
           ctxRef.current = webcam.canvas.getContext("2d");
 
           animationFrameRef.current = requestAnimationFrame(loop);
         }
-      }, 50);
+      });
     } catch (err) {
-      alert("No se pudo iniciar la cámara.");
+      alert("Error al acceder a la cámara o cargar los archivos locales.");
       console.error(err);
+      setIsCameraActive(false);
     } finally {
       setLoading(false);
     }
@@ -217,11 +221,11 @@ export const Postura: React.FC = () => {
           Análisis de <span style={{ color: "#ffffff" }}>Postura Corporal</span> 🧍
         </h1>
         <p style={styles.heroSubtitle}>
-          Detección en tiempo real utilizando el Canvas de Teachable Machine.
+          Detección local en tiempo real usando los archivos del modelo.
         </p>
       </header>
 
-      {/* Visor con el Canvas interactivo renderizado */}
+      {/* Contenedor de cámara activa */}
       {isCameraActive && (
         <div style={styles.cameraBox}>
           <div ref={canvasContainerRef} style={{ width: "100%", borderRadius: "12px", overflow: "hidden" }} />
@@ -258,6 +262,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
+      {/* Botones de entrada */}
       {!isCameraActive && (
         <div style={styles.actionContainer}>
           <div style={styles.uploadCard}>
@@ -286,7 +291,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Historial */}
+      {/* Tarjetas de resultados */}
       <div style={styles.gridContainer}>
         {history.map((item) => {
           const topPrediction = [...item.predictions].sort((a, b) => b.probability - a.probability)[0];
