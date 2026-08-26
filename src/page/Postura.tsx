@@ -34,7 +34,7 @@ export const Postura: React.FC = () => {
           MODEL_URL + "metadata.json"
         );
       } catch (err) {
-        console.error("Error al cargar el modelo local:", err);
+        console.error("Error al cargar modelo local:", err);
       }
     };
     loadModel();
@@ -44,49 +44,43 @@ export const Postura: React.FC = () => {
     };
   }, []);
 
-  // Bucle de renderizado explícito
-  const loop = async () => {
-    if (videoRef.current && videoRef.current.readyState === 4) {
-      await predict();
-    }
-    animationFrameRef.current = requestAnimationFrame(loop);
-  };
-
   const predict = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const model = modelRef.current;
 
-    if (!video || !canvas || !model) return;
+    if (!video || !canvas || !model || video.readyState < 2) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Ajustar dimensiones del canvas según el video
-    canvas.width = video.videoWidth || 400;
-    canvas.height = video.videoHeight || 400;
+    // Asegurar que las dimensiones coincidan con la cámara
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth || 400;
+      canvas.height = video.videoHeight || 400;
+    }
 
-    // 1. Estimar postura desde el feed de video
+    // 1. Estimar postura con el objeto video nativo
     const { pose, posenetOutput } = await model.estimatePose(video);
     const prediction = await model.predict(posenetOutput);
 
     setLivePredictions(prediction);
 
-    // 2. Limpiar canvas y dibujar imagen del video
+    // 2. Limpiar y redibujar el fotograma del video en el canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Invertir horizontalmente para modo espejo (opcional)
+    // Invertir imagen horizontalmente para modo espejo
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // 3. Dibujar nodos y esqueleto encima del video
+    // 3. Superponer nodos y esqueleto de postura
     if (pose) {
       const minPartConfidence = 0.2;
       
-      // Corregir coordenadas por el efecto espejo si corresponde
+      // Ajustar coordenadas X al efecto espejo del canvas
       const mirroredPose = JSON.parse(JSON.stringify(pose));
       mirroredPose.keypoints.forEach((kp: any) => {
         kp.position.x = canvas.width - kp.position.x;
@@ -97,10 +91,14 @@ export const Postura: React.FC = () => {
     }
   };
 
+  const loop = async () => {
+    await predict();
+    animationFrameRef.current = requestAnimationFrame(loop);
+  };
+
   const startCamera = async () => {
     try {
       setLoading(true);
-      setIsCameraActive(true);
 
       if (!modelRef.current) {
         modelRef.current = await tmPose.load(
@@ -109,28 +107,39 @@ export const Postura: React.FC = () => {
         );
       }
 
-      // Obtener flujo de la cámara nativa del navegador
+      // Solicitar acceso a la cámara web del dispositivo
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 400, height: 400 },
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
       });
+
       streamRef.current = stream;
-
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          animationFrameRef.current = requestAnimationFrame(loop);
-        }
-      }, 100);
-
+      setIsCameraActive(true);
     } catch (err) {
-      alert("Error al acceder a la cámara o cargar los archivos.");
+      alert("Error al iniciar la cámara. Revisa permisos.");
       console.error(err);
       setIsCameraActive(false);
-    } finally {
       setLoading(false);
     }
   };
+
+  // Callback ejecutado cuando el <video> recibe el flujo de datos
+  const handleVideoPlay = () => {
+    if (videoRef.current) {
+      videoRef.current.play().then(() => {
+        setLoading(false);
+        if (!animationFrameRef.current) {
+          animationFrameRef.current = requestAnimationFrame(loop);
+        }
+      }).catch((e) => console.error("Error al reproducir video:", e));
+    }
+  };
+
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [isCameraActive]);
 
   const capturePhoto = () => {
     if (!canvasRef.current || livePredictions.length === 0) return;
@@ -239,19 +248,23 @@ export const Postura: React.FC = () => {
         </p>
       </header>
 
-      {/* Visor de cámara y canvas sincronizados */}
+      {/* Visor de Cámara */}
       {isCameraActive && (
         <div style={styles.cameraBox}>
           <div style={{ position: "relative", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
+            {/* Elemento Video oculto que recibe el stream nativo */}
             <video
               ref={videoRef}
+              autoPlay
               playsInline
               muted
+              onLoadedMetadata={handleVideoPlay}
               style={{ display: "none" }}
             />
+            {/* Canvas visible donde pintamos el frame + esqueleto */}
             <canvas
               ref={canvasRef}
-              style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px" }}
+              style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", backgroundColor: "#000" }}
             />
           </div>
 
@@ -287,7 +300,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Botones de acción */}
+      {/* Acciones principales */}
       {!isCameraActive && (
         <div style={styles.actionContainer}>
           <div style={styles.uploadCard}>
@@ -316,7 +329,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Historial de capturas */}
+      {/* Historial */}
       <div style={styles.gridContainer}>
         {history.map((item) => {
           const topPrediction = [...item.predictions].sort((a, b) => b.probability - a.probability)[0];
