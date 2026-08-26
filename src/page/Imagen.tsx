@@ -66,10 +66,15 @@ export const Imagen: React.FC = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setIsCameraActive(true);
+
+      // Pequeño retraso para asegurar que el <video> esté montado en el DOM
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((e) => console.error("Error al reproducir video:", e));
+        }
+      }, 100);
     } catch (err) {
       alert("No se pudo acceder a la cámara web o no está disponible.");
       console.error(err);

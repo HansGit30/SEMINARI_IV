@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import * as tmPose from "@teachablemachine/pose";
 
-// Reemplaza con tu enlace de Teachable Machine (modelo de Pose)
+// Enlace actualizado de tu modelo de Teachable Machine
 const MODEL_URL = "https://teachablemachine.withgoogle.com/models/THOqcJHid/";
 
 interface HistoryItem {
@@ -16,38 +16,68 @@ export const Postura: React.FC = () => {
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Procesar imagen con el modelo @teachablemachine/pose
+  // Procesar imagen con el modelo @teachablemachine/pose y dibujar el esqueleto
   const processImageSrc = async (src: string) => {
     setLoading(true);
-    const imgElement = document.createElement("img");
+    const imgElement = new Image();
+    imgElement.crossOrigin = "anonymous";
     imgElement.src = src;
 
     imgElement.onload = async () => {
       try {
-        // 1. Cargar el modelo de postura
+        // 1. Cargar el modelo de postura con los archivos oficiales
         const model = await tmPose.load(
           MODEL_URL + "model.json",
           MODEL_URL + "metadata.json"
         );
 
-        // 2. Estimar la pose y extraer posenetOutput
-        const { posenetOutput } = await model.estimatePose(imgElement);
+        // 2. Estimar la pose
+        const { pose, posenetOutput } = await model.estimatePose(imgElement);
 
         // 3. Realizar la predicción usando posenetOutput
         const results = await model.predict(posenetOutput);
 
+        // 4. Configurar dimensiones del canvas utilizando el elemento persistente o uno nuevo bien dimensionado
+        const width = imgElement.naturalWidth || 640;
+        const height = imgElement.naturalHeight || 480;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        if (ctx) {
+          // Dibujar la imagen base en el canvas
+          ctx.drawImage(imgElement, 0, 0, width, height);
+
+          // 5. Dibujar esqueleto y puntos clave si se detecta una pose
+          if (pose && pose.keypoints) {
+            const minPartConfidence = 0.2; // Umbral de confianza para detección rápida
+            
+            // Dibujar líneas del esqueleto (ancho: 4, color: azul brillante)
+            tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx, 4, "#3b82f6");
+            
+            // Dibujar puntos clave (radio: 6, color interno: azul, borde: blanco)
+            tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx, 6, "#3b82f6", "#ffffff");
+          }
+        }
+
+        // Obtener la imagen final resultante con el esqueleto pintado
+        const processedImageSrc = canvas.toDataURL("image/png");
+
         setHistory((prev) => [
           {
             id: Date.now().toString(),
-            imageSrc: src,
+            imageSrc: processedImageSrc,
             predictions: results,
           },
           ...prev,
         ]);
       } catch (err) {
-        console.error("Error al analizar la postura:", err);
+        console.error("Error al analizar la postura con el modelo:", err);
       } finally {
         setLoading(false);
       }
@@ -73,28 +103,40 @@ export const Postura: React.FC = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setIsCameraActive(true);
+
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((e) => console.error("Error al reproducir video:", e));
+        }
+      }, 100);
     } catch (err) {
       alert("No se pudo acceder a la cámara web.");
       console.error(err);
     }
   };
 
-  // Capturar foto
-  const capturePhoto = () => {
+  // Capturar foto desde la cámara pintando también el esqueleto en tiempo real si se desea
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
     const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth || 640;
-    canvas.height = videoRef.current.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
+
     if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, width, height);
       const imageSrc = canvas.toDataURL("image/png");
-      processImageSrc(imageSrc);
+      
+      // Detenemos la cámara y procesamos la foto capturada
       stopCamera();
+      processImageSrc(imageSrc);
     }
   };
 
@@ -121,14 +163,22 @@ export const Postura: React.FC = () => {
           <span style={styles.titleGray}>Empieza Aquí</span>
         </h1>
         <p style={styles.heroSubtitle}>
-          Sube una foto o activa tu cámara para evaluar tu postura en tiempo real mediante visión por computadora.
+          Sube una foto o activa tu cámara para evaluar tu postura en tiempo real mediante visión por computadora y esqueleto interactivo.
         </p>
       </header>
 
       {/* Visor de Cámara */}
       {isCameraActive && (
         <div style={styles.cameraBox}>
-          <video ref={videoRef} autoPlay playsInline style={styles.videoPreview} />
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            style={styles.videoPreview} 
+          />
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+          
           <div style={styles.cameraControls}>
             <button style={styles.captureBtn} onClick={capturePhoto} disabled={loading}>
               📸 {loading ? "Analizando..." : "Tomar Foto"}
@@ -147,7 +197,7 @@ export const Postura: React.FC = () => {
             <label htmlFor="file-upload" style={styles.uploadLabel}>
               <span style={{ fontSize: "32px" }}>📁</span>
               <span style={{ fontWeight: "600", fontSize: "16px" }}>
-                {loading ? "Procesando..." : "Haz clic para subir foto de postura"}
+                {loading ? "Procesando esqueleto..." : "Haz clic para subir foto de postura"}
               </span>
               <span style={{ fontSize: "13px", color: "#94a3b8" }}>Formatos: JPG, PNG, WEBP</span>
             </label>
@@ -171,7 +221,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Historial de Resultados */}
+      {/* Historial de Resultados con Puntos Clave Pintados */}
       <div style={styles.gridContainer}>
         {history.map((item) => {
           const topPrediction = [...item.predictions].sort((a, b) => b.probability - a.probability)[0];
@@ -179,7 +229,7 @@ export const Postura: React.FC = () => {
           return (
             <div key={item.id} style={styles.card}>
               <div style={styles.imageContainer}>
-                <img src={item.imageSrc} alt="Analizada" style={styles.cardImage} />
+                <img src={item.imageSrc} alt="Analizada con Esqueleto" style={styles.cardImage} />
                 <div style={styles.imageOverlay} />
                 {topPrediction && (
                   <div style={styles.topBadge}>
@@ -345,8 +395,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   videoPreview: {
     width: "100%",
+    maxHeight: "400px",
     borderRadius: "12px",
     backgroundColor: "#000",
+    objectFit: "cover",
   },
   cameraControls: {
     display: "flex",
@@ -416,7 +468,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "20px",
     marginTop: "-16px",
     position: "relative",
-    zIndex: 1,
+    zIndex: "1",
   },
   cardTitle: {
     margin: "0 0 16px 0",
