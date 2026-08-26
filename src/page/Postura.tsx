@@ -26,7 +26,6 @@ export const Postura: React.FC = () => {
   const animationFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Cargar el modelo al montar el componente
   useEffect(() => {
     const loadModel = async () => {
       try {
@@ -35,7 +34,7 @@ export const Postura: React.FC = () => {
           MODEL_URL + "metadata.json"
         );
       } catch (err) {
-        console.error("Error al cargar el modelo local:", err);
+        console.error("Error al cargar el modelo:", err);
       }
     };
     loadModel();
@@ -45,7 +44,6 @@ export const Postura: React.FC = () => {
     };
   }, []);
 
-  // Bucle de predicción para la cámara en vivo
   const predict = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -56,35 +54,35 @@ export const Postura: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Asegurar dimensiones exactas entre video y canvas
     if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
     }
 
-    // 1. Estimar postura desde el video
+    // 1. Detección de la postura
     const { pose, posenetOutput } = await model.estimatePose(video);
     const prediction = await model.predict(posenetOutput);
-
     setLivePredictions(prediction);
 
-    // 2. Dibujar frame con modo espejo
+    // 2. Limpiar canvas superpuesto
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.translate(-canvas.width, 0);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    ctx.restore();
 
-    // 3. Dibujar esqueleto y puntos clave
+    // 3. Dibujar esqueleto sobre el lienzo
     if (pose) {
-      const minPartConfidence = 0.2;
-      const mirroredPose = JSON.parse(JSON.stringify(pose));
-      mirroredPose.keypoints.forEach((kp: any) => {
-        kp.position.x = canvas.width - kp.position.x;
-      });
+      const minPartConfidence = 0.1;
 
-      tmPose.drawKeypoints(mirroredPose.keypoints, minPartConfidence, ctx);
-      tmPose.drawSkeleton(mirroredPose.keypoints, minPartConfidence, ctx);
+      // Invertir coordenadas X horizontalmente para que coincida con el modo espejo del video
+      const mirroredKeypoints = pose.keypoints.map((kp: any) => ({
+        ...kp,
+        position: {
+          x: canvas.width - kp.position.x,
+          y: kp.position.y,
+        },
+      }));
+
+      tmPose.drawKeypoints(mirroredKeypoints, minPartConfidence, ctx);
+      tmPose.drawSkeleton(mirroredKeypoints, minPartConfidence, ctx);
     }
   };
 
@@ -96,7 +94,6 @@ export const Postura: React.FC = () => {
   const startCamera = async () => {
     try {
       setLoading(true);
-
       if (!modelRef.current) {
         modelRef.current = await tmPose.load(
           MODEL_URL + "model.json",
@@ -112,7 +109,7 @@ export const Postura: React.FC = () => {
       streamRef.current = stream;
       setIsCameraActive(true);
     } catch (err) {
-      alert("Error al iniciar la cámara. Revisa los permisos.");
+      alert("Error al acceder a la cámara.");
       console.error(err);
       setIsCameraActive(false);
       setLoading(false);
@@ -129,7 +126,7 @@ export const Postura: React.FC = () => {
             animationFrameRef.current = requestAnimationFrame(loop);
           }
         })
-        .catch((e) => console.error("Error al reproducir el video:", e));
+        .catch((e) => console.error(e));
     }
   };
 
@@ -140,9 +137,29 @@ export const Postura: React.FC = () => {
   }, [isCameraActive]);
 
   const capturePhoto = () => {
-    if (!canvasRef.current || livePredictions.length === 0) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || livePredictions.length === 0) return;
 
-    const snapshot = canvasRef.current.toDataURL("image/png");
+    // Crear un canvas fusionado (Video + Esqueleto) para guardar en el historial
+    const mergedCanvas = document.createElement("canvas");
+    mergedCanvas.width = canvas.width;
+    mergedCanvas.height = canvas.height;
+    const ctx = mergedCanvas.getContext("2d");
+
+    if (ctx) {
+      // Dibujar imagen especular del video
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.translate(-mergedCanvas.width, 0);
+      ctx.drawImage(video, 0, 0, mergedCanvas.width, mergedCanvas.height);
+      ctx.restore();
+
+      // Superponer los trazos del canvas en vivo
+      ctx.drawImage(canvas, 0, 0);
+    }
+
+    const snapshot = mergedCanvas.toDataURL("image/png");
 
     setHistory((prev) => [
       {
@@ -171,7 +188,7 @@ export const Postura: React.FC = () => {
     setLivePredictions([]);
   };
 
-  // Procesar imagen estática mediante la carga de archivos
+  // Procesamiento de imágenes estáticas cargadas por archivo
   const processImageSrc = async (src: string) => {
     setLoading(true);
     const imgElement = new Image();
@@ -201,8 +218,8 @@ export const Postura: React.FC = () => {
         if (ctx) {
           ctx.drawImage(imgElement, 0, 0, width, height);
           if (pose) {
-            tmPose.drawKeypoints(pose.keypoints, 0.2, ctx);
-            tmPose.drawSkeleton(pose.keypoints, 0.2, ctx);
+            tmPose.drawKeypoints(pose.keypoints, 0.1, ctx);
+            tmPose.drawSkeleton(pose.keypoints, 0.1, ctx);
           }
         }
 
@@ -215,7 +232,7 @@ export const Postura: React.FC = () => {
           ...prev,
         ]);
       } catch (err) {
-        console.error("Error al analizar la imagen:", err);
+        console.error("Error al procesar la imagen:", err);
       } finally {
         setLoading(false);
       }
@@ -247,21 +264,33 @@ export const Postura: React.FC = () => {
         </p>
       </header>
 
-      {/* Visor de Cámara en Vivo */}
+      {/* Visor de Cámara en Vivo con Canvas Overlay */}
       {isCameraActive && (
         <div style={styles.cameraBox}>
-          <div style={{ position: "relative", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
+          <div style={{ position: "relative", width: "100%", height: "auto", borderRadius: "12px", overflow: "hidden" }}>
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
               onLoadedMetadata={handleVideoPlay}
-              style={{ display: "none" }}
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                transform: "scaleX(-1)", // Espejo visual únicamente por CSS
+              }}
             />
             <canvas
               ref={canvasRef}
-              style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", backgroundColor: "#000" }}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+              }}
             />
           </div>
 
@@ -297,7 +326,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Acciones principales */}
+      {/* Controles principales */}
       {!isCameraActive && (
         <div style={styles.actionContainer}>
           <div style={styles.uploadCard}>
@@ -328,7 +357,7 @@ export const Postura: React.FC = () => {
         </div>
       )}
 
-      {/* Historial de Resultados */}
+      {/* Resultados */}
       <div style={styles.gridContainer}>
         {history.map((item) => {
           const topPrediction = [...item.predictions].sort((a, b) => b.probability - a.probability)[0];
