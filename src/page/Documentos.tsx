@@ -47,21 +47,26 @@ export default function Documentos(): React.ReactElement {
   const [error, setError] = useState("");
   const [docs, setDocs] = useState<DocumentoItem[]>(() => readDocs());
 
-  // 1. OBTENER ARCHIVOS DESDE CLOUDINARY AL CARGAR LA PÁGINA
+  // 1. OBTENER ARCHIVOS DESDE CLOUDINARY AL CARGAR LA PÁGINA (RAW + IMAGE)
   useEffect(() => {
     const fetchCloudinaryDocs = async () => {
       try {
-        const response = await fetch(
-          `https://res.cloudinary.com/${CLOUD_NAME}/raw/list/${DOCUMENT_TAG}.json`
-        );
-        if (!response.ok) return;
+        // Hacemos peticiones tanto a 'raw' como a 'image' para cubrir todos los tipos
+        const [rawRes, imgRes] = await Promise.allSettled([
+          fetch(`https://res.cloudinary.com/${CLOUD_NAME}/raw/list/${DOCUMENT_TAG}.json`),
+          fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/${DOCUMENT_TAG}.json`),
+        ]);
 
-        const data = await response.json();
-        
-        const remoteDocs: DocumentoItem[] = data.resources.map((item: any) => {
+        let rawData = rawRes.status === "fulfilled" && rawRes.value.ok ? await rawRes.value.json() : { resources: [] };
+        let imgData = imgRes.status === "fulfilled" && imgRes.value.ok ? await imgRes.value.json() : { resources: [] };
+
+        const allResources = [...(rawData.resources || []), ...(imgData.resources || [])];
+
+        const remoteDocs: DocumentoItem[] = allResources.map((item: any) => {
           const fileName = item.public_id.split('/').pop() || item.public_id;
           const fullFileName = item.format ? `${fileName}.${item.format}` : fileName;
-          
+          const resourceType = item.type || (item.format ? 'image' : 'raw');
+
           return {
             id: item.public_id,
             name: fullFileName,
@@ -72,15 +77,14 @@ export default function Documentos(): React.ReactElement {
               year: "numeric",
             }),
             size: humanFileSize(item.bytes),
-            url: `https://res.cloudinary.com/${CLOUD_NAME}/raw/upload/v${item.version}/${item.public_id}${item.format ? '.' + item.format : ''}`,
+            url: `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/upload/v${item.version}/${item.public_id}${item.format ? '.' + item.format : ''}`,
           };
         });
 
-        // Combinar datos remotos con los locales evitando duplicados
+        // Combinar datos remotos con los locales evitando duplicados por id
         setDocs((prev) => {
           const combined = [...remoteDocs, ...prev];
-          const unique = Array.from(new Map(combined.map((item) => [item.id, item])).values());
-          return unique;
+          return Array.from(new Map(combined.map((item) => [item.id, item])).values());
         });
       } catch (err) {
         console.info("No se pudo obtener el listado automático por tag:", err);
