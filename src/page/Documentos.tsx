@@ -12,9 +12,10 @@ export interface DocumentoItem {
 
 const DOCS_KEY = "dataflow_documents_metadata_v2";
 
-// Tus credenciales de Cloudinary
+// Credenciales
 const CLOUD_NAME = "ynrjq21s"; 
 const UPLOAD_PRESET = "ykmplcpw"; 
+const DOCUMENT_TAG = "app_documents"; // Etiqueta para agrupar los archivos
 
 function readDocs(): DocumentoItem[] {
   try {
@@ -34,6 +35,7 @@ function detectCategory(fileName: string): DocumentoItem["category"] {
 }
 
 function humanFileSize(bytes: number): string {
+  if (!bytes) return "N/A";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -45,10 +47,55 @@ export default function Documentos(): React.ReactElement {
   const [error, setError] = useState("");
   const [docs, setDocs] = useState<DocumentoItem[]>(() => readDocs());
 
+  // 1. OBTENER ARCHIVOS DESDE CLOUDINARY AL CARGAR LA PÁGINA
+  useEffect(() => {
+    const fetchCloudinaryDocs = async () => {
+      try {
+        const response = await fetch(
+          `https://res.cloudinary.com/${CLOUD_NAME}/raw/list/${DOCUMENT_TAG}.json`
+        );
+        if (!response.ok) return;
+
+        const data = await response.json();
+        
+        const remoteDocs: DocumentoItem[] = data.resources.map((item: any) => {
+          const fileName = item.public_id.split('/').pop() || item.public_id;
+          const fullFileName = item.format ? `${fileName}.${item.format}` : fileName;
+          
+          return {
+            id: item.public_id,
+            name: fullFileName,
+            category: detectCategory(fullFileName),
+            date: new Date(item.created_at).toLocaleDateString("es-PE", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            size: humanFileSize(item.bytes),
+            url: `https://res.cloudinary.com/${CLOUD_NAME}/raw/upload/v${item.version}/${item.public_id}${item.format ? '.' + item.format : ''}`,
+          };
+        });
+
+        // Combinar datos remotos con los locales evitando duplicados
+        setDocs((prev) => {
+          const combined = [...remoteDocs, ...prev];
+          const unique = Array.from(new Map(combined.map((item) => [item.id, item])).values());
+          return unique;
+        });
+      } catch (err) {
+        console.info("No se pudo obtener el listado automático por tag:", err);
+      }
+    };
+
+    fetchCloudinaryDocs();
+  }, []);
+
+  // Guardar en localStorage como respaldo local
   useEffect(() => {
     localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
   }, [docs]);
 
+  // 2. SUBIR ARCHIVO CON EL TAG ASIGNADO
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -61,8 +108,8 @@ export default function Documentos(): React.ReactElement {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("tags", DOCUMENT_TAG); // Asigna el tag para listar el archivo luego
 
-      // Determinar si el recurso es imagen o documento (raw)
       const isImage = file.type.startsWith("image/");
       const resourceType = isImage ? "image" : "raw";
 
@@ -83,7 +130,7 @@ export default function Documentos(): React.ReactElement {
       const data = await response.json();
 
       const nuevoDocumento: DocumentoItem = {
-        id: crypto.randomUUID(),
+        id: data.public_id,
         name: file.name,
         category: detectCategory(file.name),
         date: new Date().toLocaleDateString("es-PE", {
@@ -119,7 +166,7 @@ export default function Documentos(): React.ReactElement {
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Projects & Documents</h1>
-          <p style={styles.subtitle}>Los archivos permanecen almacenados en la nube después de recargar la página.</p>
+          <p style={styles.subtitle}>Los archivos permanecen almacenados en la nube tras recargar la página.</p>
         </div>
         <label style={{ ...styles.uploadBtn, opacity: uploading ? 0.65 : 1 }}>
           {uploading ? "Subiendo..." : "⚡ Subir Archivo"}
