@@ -1,31 +1,58 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { defaultAvatar, getRegisteredUsers, hashPassword, saveRegisteredUsers, saveSession } from "../utils/auth";
 
 function Login(): React.ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    const normalizedEmail = email.trim().toLowerCase();
     const isDefaultAdmin =
-      (email === "admin" || email === "admin@python.org") && password === "admin";
+      (normalizedEmail === "admin" || normalizedEmail === "admin@python.org") && password === "admin";
 
-    const registeredUsers = JSON.parse(
-      localStorage.getItem("registered_users") || "[]"
-    );
-    const foundUser = registeredUsers.find(
-      (u: { email?: string; password?: string }) =>
-        u.email === email && u.password === password
+    const registeredUsers = getRegisteredUsers();
+    const passwordHash = await hashPassword(password);
+    const userIndex = registeredUsers.findIndex(
+      (u) => u.email?.trim().toLowerCase() === normalizedEmail &&
+        (u.passwordHash === passwordHash || u.password === password)
     );
 
-    if (isDefaultAdmin || foundUser) {
-      navigate("/dashboard");
+    if (isDefaultAdmin) {
+      saveSession({
+        email: normalizedEmail,
+        name: "Administrador",
+        role: "Administrador",
+        avatar: defaultAvatar,
+      });
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(from || "/dashboard/home", { replace: true });
+      return;
+    }
+
+    if (userIndex >= 0) {
+      const foundUser = registeredUsers[userIndex];
+      // Migra cuentas antiguas que guardaban la contraseña en texto plano.
+      if (!foundUser.passwordHash) {
+        registeredUsers[userIndex] = { ...foundUser, passwordHash, password: undefined };
+        saveRegisteredUsers(registeredUsers);
+      }
+      saveSession({
+        email: normalizedEmail,
+        name: foundUser.name || normalizedEmail.split("@")[0] || "Usuario",
+        role: foundUser.role || "Usuario",
+        avatar: defaultAvatar,
+      });
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(from || "/dashboard/home", { replace: true });
     } else {
-      setError("AuthError: Credenciales inválidas ('admin' / 'admin' o usuario registrado)");
+      setError("AuthError: Credenciales inválidas");
     }
   };
 

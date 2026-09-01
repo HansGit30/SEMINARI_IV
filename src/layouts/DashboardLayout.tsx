@@ -124,7 +124,7 @@ export default function DashboardLayout(): React.ReactElement {
           })}
 
           {/* SECCIÓN SUPPORT */}
-          <div style={styles.menuSectionTitle}>SUPPORT</div>
+          {/* <div style={styles.menuSectionTitle}>SUPPORT</div>
           <div
             onClick={() => handleNavigation("/dashboard/documentos")}
             style={{
@@ -136,7 +136,23 @@ export default function DashboardLayout(): React.ReactElement {
           >
             <span>📄</span> DOCUMENTACIÓN
           </div>
+        </nav> */}
+
+        {/* SECCIÓN SUPPORT */}
+        <div style={styles.menuSectionTitle}>SUPPORT</div>
+        <div
+          onClick={() => handleNavigation("/dashboard/documentos")}
+          style={{
+            ...styles.menuItem,
+            ...(location.pathname === "/dashboard/documentos" // 👈 Corregido de /dashboard/documentacion a /dashboard/documentos
+              ? styles.menuItemActive
+              : {}),
+          }}
+        >
+          <span>📄</span> DOCUMENTACIÓN
+        </div>
         </nav>
+
 
         {/* PERFIL DE USUARIO DINÁMICO */}
         <div style={styles.userProfile}>

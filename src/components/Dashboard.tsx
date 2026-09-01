@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { LoadedCSV, ExecutionReport } from "../types/dashboard";
 import { Panda } from "../page/Panda";
 import { Numpy } from "../page/Numpy";
-import { ReportesPage } from "../page/Reportes";
+import { Reportes } from "../page/Reportes";
+import { appStorage } from "../utils/storage";
 
 function Dashboard(): React.ReactElement {
   const location = useLocation();
@@ -18,9 +19,17 @@ function Dashboard(): React.ReactElement {
 
   const activeTab = getActiveTab();
 
-  const [csvFiles, setCsvFiles] = useState<LoadedCSV[]>([]);
+  const [csvFiles, setCsvFiles] = useState<LoadedCSV[]>(() => appStorage.getCsvFiles());
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [reports, setReports] = useState<ExecutionReport[]>([]);
+  const [reports, setReports] = useState<ExecutionReport[]>(() => appStorage.getReports());
+
+  useEffect(() => {
+    appStorage.setCsvFiles(csvFiles);
+  }, [csvFiles]);
+
+  useEffect(() => {
+    appStorage.setReports(reports);
+  }, [reports]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,7 +44,10 @@ function Dashboard(): React.ReactElement {
     setCsvFiles((prev) => prev.map((f) => ({ ...f, lastOutput: null })));
   };
 
-  const parseCSVText = (text: string) => {
+  const parseCSVText = (rawText: string) => {
+    const text = rawText.replace(/^\uFEFF/, "");
+    const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+    const delimiter = firstLine.split(";").length > firstLine.split(",").length ? ";" : ",";
     const rows: string[][] = [];
     let currentRow: string[] = [];
     let currentCell = "";
@@ -44,26 +56,17 @@ function Dashboard(): React.ReactElement {
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       const nextChar = text[i + 1];
-
       if (char === '"') {
-        if (insideQuotes && nextChar === '"') {
-          currentCell += '"';
-          i++;
-        } else {
-          insideQuotes = !insideQuotes;
-        }
-      } else if (char === "," && !insideQuotes) {
-        currentRow.push(currentCell.trim());
-        currentCell = "";
+        if (insideQuotes && nextChar === '"') { currentCell += '"'; i++; }
+        else insideQuotes = !insideQuotes;
+      } else if (char === delimiter && !insideQuotes) {
+        currentRow.push(currentCell.trim()); currentCell = "";
       } else if ((char === "\r" || char === "\n") && !insideQuotes) {
         if (char === "\r" && nextChar === "\n") i++;
         currentRow.push(currentCell.trim());
         if (currentRow.some((cell) => cell !== "")) rows.push(currentRow);
-        currentRow = [];
-        currentCell = "";
-      } else {
-        currentCell += char;
-      }
+        currentRow = []; currentCell = "";
+      } else currentCell += char;
     }
     if (currentCell !== "" || currentRow.length > 0) {
       currentRow.push(currentCell.trim());
@@ -74,23 +77,33 @@ function Dashboard(): React.ReactElement {
 
   const processCSVFile = (file: File) => {
     if (!file) return;
+    const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
+    if (!isCsv) {
+      window.alert("Solo se permiten archivos CSV.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) {
-        const parsedMatrix = parseCSVText(text);
-        if (parsedMatrix.length > 0) {
-          const newFileEntry: LoadedCSV = {
-            id: Math.random().toString(36).substring(2, 9),
-            fileName: file.name,
-            headers: parsedMatrix[0],
-            rows: parsedMatrix.slice(1),
-            lastOutput: null,
-          };
-          setCsvFiles((prev) => [newFileEntry, ...prev]);
-        }
+      const text = String(e.target?.result ?? "");
+      const parsedMatrix = parseCSVText(text);
+      if (parsedMatrix.length < 1 || parsedMatrix[0].length < 1) {
+        window.alert("No se pudo leer el CSV o está vacío.");
+        return;
       }
+      const width = parsedMatrix[0].length;
+      const normalizedRows = parsedMatrix.slice(1).map((row) =>
+        Array.from({ length: width }, (_, i) => row[i] ?? "")
+      );
+      const newFileEntry: LoadedCSV = {
+        id: crypto.randomUUID(),
+        fileName: file.name,
+        headers: parsedMatrix[0].map((header, index) => header || `columna_${index + 1}`),
+        rows: normalizedRows,
+        lastOutput: null,
+      };
+      setCsvFiles((prev) => [newFileEntry, ...prev]);
     };
+    reader.onerror = () => window.alert("No se pudo leer el archivo CSV.");
     reader.readAsText(file);
   };
 
@@ -107,7 +120,7 @@ function Dashboard(): React.ReactElement {
     fileName: string
   ) => {
     const newReport: ExecutionReport = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: crypto.randomUUID(),
       library,
       action,
       timestamp: new Date().toLocaleTimeString(),
@@ -217,7 +230,7 @@ function Dashboard(): React.ReactElement {
           styles={styles}
         />
       )}
-      {activeTab === "reporte" && <ReportesPage reports={reports} styles={styles} />}
+      {activeTab === "reporte" && <Reportes reports={reports} styles={styles} />}
     </div>
   );
 }

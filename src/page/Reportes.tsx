@@ -2,11 +2,11 @@ import React from "react";
 import type { ExecutionReport } from "../types/dashboard";
 
 interface Props {
-  reports: ExecutionReport[];
-  styles: Record<string, React.CSSProperties>;
+  reports?: ExecutionReport[];
+  styles?: Record<string, React.CSSProperties>;
 }
 
-export const ReportesPage: React.FC<Props> = ({ reports, styles }) => {
+export const Reportes: React.FC<Props> = ({ reports = [], styles = {} }) => {
   // Función para descargar un solo reporte en CSV
   const downloadSingleCSV = (report: ExecutionReport) => {
     const csvContent =
@@ -50,7 +50,7 @@ export const ReportesPage: React.FC<Props> = ({ reports, styles }) => {
 
   if (reports.length === 0) {
     return (
-      <div style={styles.emptyStateContainer}>
+      <div style={styles.emptyStateContainer || customStyles.defaultEmptyState}>
         No hay registros de ejecuciones. Realiza operaciones en <strong>Pandas</strong> o <strong>NumPy</strong> para ver el historial aquí.
       </div>
     );
@@ -61,7 +61,7 @@ export const ReportesPage: React.FC<Props> = ({ reports, styles }) => {
   const numpyCount = reports.filter((r) => r.library === "NumPy").length;
 
   return (
-    <div style={styles.panelContainer}>
+    <div style={styles.panelContainer || customStyles.defaultPanel}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div>
           <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
@@ -137,7 +137,18 @@ export const ReportesPage: React.FC<Props> = ({ reports, styles }) => {
   );
 };
 
+export default Reportes;
+
 const customStyles: Record<string, React.CSSProperties> = {
+  defaultEmptyState: {
+    padding: "40px",
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: "16px",
+  },
+  defaultPanel: {
+    padding: "24px",
+  },
   downloadAllBtn: {
     padding: "10px 20px",
     backgroundColor: "#b4f461",
