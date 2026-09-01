@@ -126,7 +126,7 @@ export default function DashboardLayout(): React.ReactElement {
           {/* SECCIÓN SUPPORT */}
           <div style={styles.menuSectionTitle}>SUPPORT</div>
           <div
-            onClick={() => handleNavigation("/dashboard/documentacion")}
+            onClick={() => handleNavigation("/dashboard/documentos")}
             style={{
               ...styles.menuItem,
               ...(location.pathname === "/dashboard/documentacion"

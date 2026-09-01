@@ -14,6 +14,7 @@ import HomeDashboard from "../page/HomeDashboard";
 import Imagen from "../page/Imagen";
 import Audio from "../page/Audio";
 import Postura from "../page/Postura";
+import Documentos from "../page/Documentos";
 
 function AppRoutes() {
   return (
@@ -27,11 +28,13 @@ function AppRoutes() {
       </Route>
 
       <Route element={<DashboardLayout />}>
-        <Route path="/dashboard/*" element={<Dashboard />} />
+        <Route path="/dashboard/" element={<Dashboard />} />
         <Route path="/dashboard/home" element={<HomeDashboard />} />
         <Route path="/dashboard/imagen" element={<Imagen />} />
         <Route path="/dashboard/audio" element={<Audio />} />
         <Route path="/dashboard/postura" element={<Postura />} />
+        <Route path="/dashboard/documentos" element={<Documentos />} />
+
       </Route>
 
       <Route path="/login" element={<Login />} />
