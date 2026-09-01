@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { upload } from "@vercel/blob/client";
-import { deleteDocumentBlob, getDocumentBlob, saveDocumentBlob } from "../utils/storage";
 
 export interface DocumentoItem {
   id: string;
@@ -9,11 +7,14 @@ export interface DocumentoItem {
   date: string;
   size: string;
   url: string;
-  storage: "vercel" | "indexeddb";
   contentType?: string;
 }
 
 const DOCS_KEY = "dataflow_documents_metadata_v2";
+
+// Tus credenciales de Cloudinary
+const CLOUD_NAME = "ynrjq21s"; 
+const UPLOAD_PRESET = "ykmplcpw"; 
 
 function readDocs(): DocumentoItem[] {
   try {
@@ -45,38 +46,8 @@ export default function Documentos(): React.ReactElement {
   const [docs, setDocs] = useState<DocumentoItem[]>(() => readDocs());
 
   useEffect(() => {
-    localStorage.setItem(DOCS_KEY, JSON.stringify(docs.map((doc) => ({ ...doc, url: doc.storage === "indexeddb" ? "" : doc.url }))));
+    localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
   }, [docs]);
-
-  useEffect(() => {
-    let active = true;
-    const objectUrls: string[] = [];
-
-    const hydrateLocalDocuments = async () => {
-      const metadata = readDocs();
-      const hydrated = await Promise.all(
-        metadata.map(async (doc) => {
-          if (doc.storage !== "indexeddb") return doc;
-          try {
-            const blob = await getDocumentBlob(doc.id);
-            if (!blob) return doc;
-            const url = URL.createObjectURL(blob);
-            objectUrls.push(url);
-            return { ...doc, url };
-          } catch {
-            return doc;
-          }
-        })
-      );
-      if (active) setDocs(hydrated);
-    };
-
-    void hydrateLocalDocuments();
-    return () => {
-      active = false;
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,27 +56,34 @@ export default function Documentos(): React.ReactElement {
 
     setUploading(true);
     setError("");
-    const id = crypto.randomUUID();
 
     try {
-      let url = "";
-      let storage: DocumentoItem["storage"] = "indexeddb";
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
 
-      try {
-        const result = await upload(`${Date.now()}-${file.name}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/upload",
-        });
-        url = result.url;
-        storage = "vercel";
-      } catch (remoteError) {
-        console.info("Vercel Blob no disponible; se usará almacenamiento local persistente.", remoteError);
-        await saveDocumentBlob(id, file);
-        url = URL.createObjectURL(file);
+      // Determinar si el recurso es imagen o documento (raw)
+      const isImage = file.type.startsWith("image/");
+      const resourceType = isImage ? "image" : "raw";
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errData = await response.json();
+        console.error("Error devuelto por Cloudinary:", errData);
+        throw new Error("No se pudo subir el archivo a Cloudinary.");
       }
 
+      const data = await response.json();
+
       const nuevoDocumento: DocumentoItem = {
-        id,
+        id: crypto.randomUUID(),
         name: file.name,
         category: detectCategory(file.name),
         date: new Date().toLocaleDateString("es-PE", {
@@ -114,36 +92,21 @@ export default function Documentos(): React.ReactElement {
           year: "numeric",
         }),
         size: humanFileSize(file.size),
-        url,
-        storage,
+        url: data.secure_url,
         contentType: file.type,
       };
 
       setDocs((prev) => [nuevoDocumento, ...prev]);
     } catch (uploadError) {
       console.error(uploadError);
-      setError("No se pudo almacenar el archivo. Verifica el espacio disponible e inténtalo nuevamente.");
+      setError("Error al subir el archivo. Revisa tu conexión o la configuración del preset.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDeleteDoc = async (doc: DocumentoItem) => {
-    try {
-      if (doc.storage === "indexeddb") {
-        await deleteDocumentBlob(doc.id);
-        if (doc.url.startsWith("blob:")) URL.revokeObjectURL(doc.url);
-      } else if (doc.url) {
-        await fetch("/api/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: doc.url }),
-        });
-      }
-    } catch (deleteError) {
-      console.warn("No se pudo eliminar el archivo físico; se quitará del listado local.", deleteError);
-    }
-    setDocs((prev) => prev.filter((item) => item.id !== doc.id));
+  const handleDeleteDoc = (id: string) => {
+    setDocs((prev) => prev.filter((item) => item.id !== id));
   };
 
   const filteredDocs = useMemo(
@@ -156,7 +119,7 @@ export default function Documentos(): React.ReactElement {
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Projects & Documents</h1>
-          <p style={styles.subtitle}>Los archivos permanecen almacenados después de recargar la página.</p>
+          <p style={styles.subtitle}>Los archivos permanecen almacenados en la nube después de recargar la página.</p>
         </div>
         <label style={{ ...styles.uploadBtn, opacity: uploading ? 0.65 : 1 }}>
           {uploading ? "Subiendo..." : "⚡ Subir Archivo"}
@@ -201,7 +164,7 @@ export default function Documentos(): React.ReactElement {
                   <div style={styles.docDate}>{doc.date}</div>
                 </div>
                 <span style={styles.badge}>{doc.category}</span>
-                <button onClick={() => void handleDeleteDoc(doc)} style={styles.deleteBtn} title="Eliminar documento">🗑️</button>
+                <button onClick={() => handleDeleteDoc(doc.id)} style={styles.deleteBtn} title="Eliminar documento">🗑️</button>
               </div>
 
               <div style={styles.previewContainer}>
@@ -220,18 +183,12 @@ export default function Documentos(): React.ReactElement {
                 <span style={styles.tag}>Recurso</span>
                 <span style={styles.tag}>{doc.category}</span>
                 <span style={styles.tag}>{doc.size}</span>
-                <span style={styles.tag}>{doc.storage === "vercel" ? "Nube" : "Local persistente"}</span>
+                <span style={styles.tag}>Cloudinary</span>
               </div>
 
               <div style={styles.actionsRow}>
-                {doc.url ? (
-                  <>
-                    <a href={doc.url} target="_blank" rel="noreferrer" style={styles.viewBtn}>👁️ Visualizar</a>
-                    <a href={doc.url} download={doc.name} style={styles.downloadBtn}>⬇️ Descargar</a>
-                  </>
-                ) : (
-                  <span style={styles.unavailable}>Archivo no disponible en este navegador.</span>
-                )}
+                <a href={doc.url} target="_blank" rel="noreferrer" style={styles.viewBtn}>👁️ Visualizar</a>
+                <a href={doc.url} download={doc.name} style={styles.downloadBtn}>⬇️ Descargar</a>
               </div>
             </div>
           ))}
@@ -269,5 +226,4 @@ const styles: Record<string, React.CSSProperties> = {
   actionsRow: { display: "flex", gap: "10px", marginTop: "8px" },
   viewBtn: { flex: 1, textAlign: "center", padding: "10px", borderRadius: "10px", border: "1px solid #e4e4e7", textDecoration: "none", color: "#18181b", fontSize: "13px", fontWeight: 600 },
   downloadBtn: { flex: 1, textAlign: "center", padding: "10px", borderRadius: "10px", backgroundColor: "#000000", textDecoration: "none", color: "#ffffff", fontSize: "13px", fontWeight: 600 },
-  unavailable: { color: "#a1a1aa", fontSize: "12px" },
 };
