@@ -12,6 +12,7 @@
   "dependencies": {
     "@cloudinary/react": "^1.14.4",
     "@cloudinary/url-gen": "^1.22.0",
+    "@supabase/supabase-js": "^2.112.4",
     "@teachablemachine/image": "^0.8.5",
     "@teachablemachine/pose": "^0.8.6",
     "@tensorflow-models/speech-commands": "^0.5.4",

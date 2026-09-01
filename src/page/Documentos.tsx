@@ -1,4 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { 
+  FileText, 
+  Upload, 
+  Eye, 
+  Download, 
+  Trash2, 
+  FileType, 
+  Presentation, 
+  Table, 
+  Sparkles,
+  X 
+} from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 export interface DocumentoItem {
   id: string;
@@ -7,274 +20,335 @@ export interface DocumentoItem {
   date: string;
   size: string;
   url: string;
-  contentType?: string;
 }
 
-const DOCS_KEY = "dataflow_documents_metadata_v2";
+const humanFileSize = (sizeInBytes: number): string => {
+  if (!sizeInBytes) return "0 B";
+  const i = Math.floor(Math.log(sizeInBytes) / Math.log(1024));
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  return (sizeInBytes / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
+};
 
-// Credenciales
-const CLOUD_NAME = "ynrjq21s"; 
-const UPLOAD_PRESET = "ykmplcpw"; 
-const DOCUMENT_TAG = "app_documents"; // Etiqueta para agrupar los archivos
-
-function readDocs(): DocumentoItem[] {
-  try {
-    const value = JSON.parse(localStorage.getItem(DOCS_KEY) || "[]");
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-}
-
-function detectCategory(fileName: string): DocumentoItem["category"] {
-  const lower = fileName.toLowerCase();
-  if (lower.endsWith(".pdf")) return "PDF";
-  if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) return "PPT";
-  if (lower.endsWith(".csv")) return "CSV";
+const detectCategory = (fileName: string): "PDF" | "PPT" | "CSV" | "OTRO" => {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "PDF";
+  if (["ppt", "pptx"].includes(ext || "")) return "PPT";
+  if (["csv", "xls", "xlsx"].includes(ext || "")) return "CSV";
   return "OTRO";
-}
+};
 
-function humanFileSize(bytes: number): string {
-  if (!bytes) return "N/A";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-export default function Documentos(): React.ReactElement {
-  const [filter, setFilter] = useState<"All" | "PDF" | "PPT" | "CSV">("All");
+export const Documentos: React.FC = () => {
+  const [docs, setDocs] = useState<DocumentoItem[]>([]);
+  const [filter, setFilter] = useState<string>("Todos");
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [docs, setDocs] = useState<DocumentoItem[]>(() => readDocs());
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // 1. OBTENER ARCHIVOS DESDE CLOUDINARY AL CARGAR LA PÁGINA (RAW + IMAGE)
-  useEffect(() => {
-    const fetchCloudinaryDocs = async () => {
-      try {
-        // Hacemos peticiones tanto a 'raw' como a 'image' para cubrir todos los tipos
-        const [rawRes, imgRes] = await Promise.allSettled([
-          fetch(`https://res.cloudinary.com/${CLOUD_NAME}/raw/list/${DOCUMENT_TAG}.json`),
-          fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/${DOCUMENT_TAG}.json`),
-        ]);
+  const fetchDocs = async () => {
+    const { data, error } = await supabase
+      .from("documentos")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-        let rawData = rawRes.status === "fulfilled" && rawRes.value.ok ? await rawRes.value.json() : { resources: [] };
-        let imgData = imgRes.status === "fulfilled" && imgRes.value.ok ? await imgRes.value.json() : { resources: [] };
+    if (error) {
+      console.error("Error cargando documentos:", error);
+      return;
+    }
 
-        const allResources = [...(rawData.resources || []), ...(imgData.resources || [])];
-
-        const remoteDocs: DocumentoItem[] = allResources.map((item: any) => {
-          const fileName = item.public_id.split('/').pop() || item.public_id;
-          const fullFileName = item.format ? `${fileName}.${item.format}` : fileName;
-          const resourceType = item.type || (item.format ? 'image' : 'raw');
-
-          return {
-            id: item.public_id,
-            name: fullFileName,
-            category: detectCategory(fullFileName),
-            date: new Date(item.created_at).toLocaleDateString("es-PE", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }),
-            size: humanFileSize(item.bytes),
-            url: `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/upload/v${item.version}/${item.public_id}${item.format ? '.' + item.format : ''}`,
-          };
-        });
-
-        // Combinar datos remotos con los locales evitando duplicados por id
-        setDocs((prev) => {
-          const combined = [...remoteDocs, ...prev];
-          return Array.from(new Map(combined.map((item) => [item.id, item])).values());
-        });
-      } catch (err) {
-        console.info("No se pudo obtener el listado automático por tag:", err);
-      }
-    };
-
-    fetchCloudinaryDocs();
-  }, []);
-
-  // Guardar en localStorage como respaldo local
-  useEffect(() => {
-    localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
-  }, [docs]);
-
-  // 2. SUBIR ARCHIVO CON EL TAG ASIGNADO
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    setUploading(true);
-    setError("");
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", UPLOAD_PRESET);
-      formData.append("tags", DOCUMENT_TAG); // Asigna el tag para listar el archivo luego
-
-      const isImage = file.type.startsWith("image/");
-      const resourceType = isImage ? "image" : "raw";
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errData = await response.json();
-        console.error("Error devuelto por Cloudinary:", errData);
-        throw new Error("No se pudo subir el archivo a Cloudinary.");
-      }
-
-      const data = await response.json();
-
-      const nuevoDocumento: DocumentoItem = {
-        id: data.public_id,
-        name: file.name,
-        category: detectCategory(file.name),
-        date: new Date().toLocaleDateString("es-PE", {
+    if (data) {
+      const formattedDocs: DocumentoItem[] = data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        date: new Date(item.created_at).toLocaleDateString("es-PE", {
           day: "2-digit",
           month: "short",
           year: "numeric",
         }),
-        size: humanFileSize(file.size),
-        url: data.secure_url,
-        contentType: file.type,
-      };
-
-      setDocs((prev) => [nuevoDocumento, ...prev]);
-    } catch (uploadError) {
-      console.error(uploadError);
-      setError("Error al subir el archivo. Revisa tu conexión o la configuración del preset.");
-    } finally {
-      setUploading(false);
+        size: item.size,
+        url: item.url,
+      }));
+      setDocs(formattedDocs);
     }
   };
 
-  const handleDeleteDoc = (id: string) => {
-    setDocs((prev) => prev.filter((item) => item.id !== id));
+  useEffect(() => {
+    fetchDocs();
+  }, []);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+
+    try {
+      const cleanName = file.name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9.-]/g, "_");
+
+      const filePath = `files/${Date.now()}_${cleanName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("documentos")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("documentos")
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase.from("documentos").insert([
+        {
+          name: file.name,
+          category: detectCategory(file.name),
+          size: humanFileSize(file.size),
+          url: urlData.publicUrl,
+        },
+      ]);
+
+      if (dbError) throw dbError;
+
+      await fetchDocs();
+    } catch (error) {
+      console.error("Error al subir el archivo:", error);
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
   };
 
-  const filteredDocs = useMemo(
-    () => (filter === "All" ? docs : docs.filter((d) => d.category === filter)),
-    [docs, filter]
-  );
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("documentos").delete().eq("id", id);
+    if (!error) {
+      setDocs((prev) => prev.filter((doc) => doc.id !== id));
+    }
+  };
+
+  const filteredDocs = filter === "Todos" 
+    ? docs 
+    : docs.filter((doc) => doc.category === filter);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "32px" }}>
         <div>
-          <h1 style={styles.title}>Projects & Documents</h1>
-          <p style={styles.subtitle}>Los archivos permanecen almacenados en la nube tras recargar la página.</p>
+          <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#111827", margin: 0, tracking: "-0.025em" }}>
+            Projects &amp; Documents
+          </h1>
+          <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px", margin: 0 }}>
+            Gestión centralizada de archivos con Supabase.
+          </p>
         </div>
-        <label style={{ ...styles.uploadBtn, opacity: uploading ? 0.65 : 1 }}>
-          {uploading ? "Subiendo..." : "⚡ Subir Archivo"}
+
+        <label style={{ 
+          display: "inline-flex", 
+          alignItems: "center", 
+          gap: "8px", 
+          backgroundColor: "#000000", 
+          color: "#ffffff", 
+          fontWeight: "500", 
+          padding: "10px 20px", 
+          borderRadius: "12px", 
+          cursor: uploading ? "not-allowed" : "pointer", 
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          opacity: uploading ? 0.7 : 1
+        }}>
+          <Upload style={{ width: "16px", height: "16px", color: "#f59e0b" }} />
+          <span>{uploading ? "Subiendo..." : "Subir Archivo"}</span>
           <input
             type="file"
             onChange={handleFileUpload}
-            accept=".pdf,.ppt,.pptx,.csv,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
-            hidden
             disabled={uploading}
+            style={{ display: "none" }}
           />
         </label>
       </div>
 
-      {error && <div style={styles.errorBox}>{error}</div>}
-
-      <div style={styles.tabsContainer}>
-        {(["All", "PDF", "PPT", "CSV"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setFilter(tab)}
-            style={{ ...styles.tabBtn, ...(filter === tab ? styles.activeTabBtn : {}) }}
-          >
-            {tab === "All" && "⚡ "}
-            {tab === "PDF" && "📄 "}
-            {tab === "PPT" && "📊 "}
-            {tab === "CSV" && "📈 "}
-            {tab === "All" ? "Todos" : tab}
-          </button>
-        ))}
+      {/* Categorías / Filtros */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "32px" }}>
+        {[
+          { label: "Todos", icon: Sparkles },
+          { label: "PDF", icon: FileType },
+          { label: "PPT", icon: Presentation },
+          { label: "CSV", icon: Table },
+        ].map(({ label, icon: Icon }) => {
+          const isActive = filter === label;
+          return (
+            <button
+              key={label}
+              onClick={() => setFilter(label)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                borderRadius: "12px",
+                fontSize: "14px",
+                fontWeight: isActive ? "600" : "500",
+                backgroundColor: isActive ? "#ffffff" : "transparent",
+                color: isActive ? "#000000" : "#6b7280",
+                border: isActive ? "1px solid #e5e7eb" : "1px solid transparent",
+                boxShadow: isActive ? "0 1px 2px 0 rgba(0, 0, 0, 0.05)" : "none",
+                cursor: "pointer"
+              }}
+            >
+              <Icon style={{ width: "16px", height: "16px", color: isActive ? "#f59e0b" : "#9ca3af" }} />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
+      {/* Lista / Grid de Tarjetas */}
       {filteredDocs.length === 0 ? (
-        <div style={styles.emptyState}>Aún no hay documentos en esta categoría.</div>
+        <div style={{ 
+          display: "flex", 
+          flexDirection: "column", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          padding: "48px", 
+          border: "2px dashed #e5e7eb", 
+          borderRadius: "24px", 
+          backgroundColor: "#f9fafb", 
+          color: "#9ca3af", 
+          textAlign: "center" 
+        }}>
+          <FileText style={{ width: "40px", height: "40px", marginBottom: "12px" }} />
+          <p style={{ fontSize: "14px", margin: 0 }}>Aún no hay documentos en esta categoría.</p>
+        </div>
       ) : (
-        <div style={styles.grid}>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", 
+          gap: "16px" 
+        }}>
           {filteredDocs.map((doc) => (
-            <div key={doc.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div style={styles.avatar}>▲</div>
-                <div>
-                  <div style={styles.authorName}>DataFlow</div>
-                  <div style={styles.docDate}>{doc.date}</div>
+            <div
+              key={doc.id}
+              style={{
+                backgroundColor: "#ffffff",
+                padding: "20px",
+                borderRadius: "16px",
+                border: "1px solid #f3f4f6",
+                boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                minHeight: "130px"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                <div style={{ padding: "12px", backgroundColor: "#fffbe3", borderRadius: "12px", color: "#d97706" }}>
+                  <FileText style={{ width: "24px", height: "24px" }} />
                 </div>
-                <span style={styles.badge}>{doc.category}</span>
-                <button onClick={() => handleDeleteDoc(doc.id)} style={styles.deleteBtn} title="Eliminar documento">🗑️</button>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <button
+                    onClick={() => setPreviewUrl(doc.url)}
+                    style={{ padding: "8px", color: "#9ca3af", background: "none", border: "none", cursor: "pointer", borderRadius: "8px" }}
+                    title="Visualizar"
+                  >
+                    <Eye style={{ width: "16px", height: "16px" }} />
+                  </button>
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    style={{ padding: "8px", color: "#9ca3af", background: "none", border: "none", cursor: "pointer", borderRadius: "8px", display: "inline-flex" }}
+                    title="Descargar"
+                  >
+                    <Download style={{ width: "16px", height: "16px" }} />
+                  </a>
+                  <button
+                    onClick={() => handleDelete(doc.id)}
+                    style={{ padding: "8px", color: "#9ca3af", background: "none", border: "none", cursor: "pointer", borderRadius: "8px" }}
+                    title="Eliminar"
+                  >
+                    <Trash2 style={{ width: "16px", height: "16px" }} />
+                  </button>
+                </div>
               </div>
 
-              <div style={styles.previewContainer}>
-                {doc.category === "PDF" && doc.url ? (
-                  <iframe src={doc.url} style={styles.iframePreview} title={doc.name} />
-                ) : (
-                  <div style={styles.placeholderPreview}>
-                    <span style={{ fontSize: "40px" }}>{doc.category === "PDF" ? "📄" : doc.category === "PPT" ? "📊" : doc.category === "CSV" ? "📈" : "📁"}</span>
-                    <p style={{ fontSize: "12px", color: "#666", marginTop: "8px", textAlign: "center" }}>{doc.name}</p>
-                  </div>
-                )}
-              </div>
-
-              <h3 style={styles.cardTitle}>{doc.name}</h3>
-              <div style={styles.tagsRow}>
-                <span style={styles.tag}>Recurso</span>
-                <span style={styles.tag}>{doc.category}</span>
-                <span style={styles.tag}>{doc.size}</span>
-                <span style={styles.tag}>Cloudinary</span>
-              </div>
-
-              <div style={styles.actionsRow}>
-                <a href={doc.url} target="_blank" rel="noreferrer" style={styles.viewBtn}>👁️ Visualizar</a>
-                <a href={doc.url} download={doc.name} style={styles.downloadBtn}>⬇️ Descargar</a>
+              <div style={{ marginTop: "16px" }}>
+                <h3 style={{ 
+                  fontSize: "15px", 
+                  fontWeight: "600", 
+                  color: "#111827", 
+                  margin: 0, 
+                  whiteSpace: "nowrap", 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis" 
+                }} title={doc.name}>
+                  {doc.name}
+                </h3>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#9ca3af", marginTop: "6px" }}>
+                  <span>{doc.date}</span>
+                  <span>•</span>
+                  <span>{doc.size}</span>
+                  <span>•</span>
+                  <span style={{ backgroundColor: "#f3f4f6", color: "#4b5563", fontWeight: "500", padding: "2px 8px", borderRadius: "6px" }}>
+                    {doc.category}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Modal de Previsualización */}
+      {previewUrl && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(4px)",
+          zIndex: 50,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px"
+        }}>
+          <div style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            width: "100%",
+            maxWidth: "900px",
+            height: "80vh",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #e5e7eb" }}>
+              <h3 style={{ margin: 0, fontWeight: "600", color: "#111827" }}>Vista previa</h3>
+              <button
+                onClick={() => setPreviewUrl(null)}
+                style={{ padding: "4px", color: "#9ca3af", background: "none", border: "none", cursor: "pointer", borderRadius: "8px" }}
+              >
+                <X style={{ width: "20px", height: "20px" }} />
+              </button>
+            </div>
+            <div style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
+              <iframe
+                src={previewUrl}
+                title="Vista previa del documento"
+                style={{ width: "100%", height: "100%", border: "none" }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: { padding: "32px", backgroundColor: "#f4f4f5", minHeight: "100vh" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "20px", marginBottom: "20px" },
-  title: { fontSize: "28px", fontWeight: 700, color: "#18181b", margin: 0 },
-  subtitle: { margin: "6px 0 0", color: "#71717a", fontSize: "13px" },
-  uploadBtn: { backgroundColor: "#000000", color: "#ffffff", padding: "10px 20px", borderRadius: "10px", cursor: "pointer", fontSize: "14px", fontWeight: 600 },
-  errorBox: { marginBottom: "18px", padding: "12px 16px", borderRadius: "12px", backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: "13px" },
-  tabsContainer: { display: "flex", gap: "6px", backgroundColor: "#e4e4e7", padding: "4px", borderRadius: "14px", width: "fit-content", marginBottom: "24px" },
-  tabBtn: { border: "none", background: "none", padding: "8px 20px", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#71717a" },
-  activeTabBtn: { backgroundColor: "#ffffff", color: "#000000", fontWeight: 600, boxShadow: "0 2px 4px rgba(0,0,0,0.05)" },
-  emptyState: { background: "#fff", border: "1px dashed #d4d4d8", borderRadius: "20px", padding: "60px 24px", textAlign: "center", color: "#71717a" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" },
-  card: { backgroundColor: "#ffffff", borderRadius: "24px", padding: "20px", border: "1px solid #e4e4e7", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" },
-  cardHeader: { display: "flex", alignItems: "center", gap: "12px" },
-  avatar: { width: "36px", height: "36px", backgroundColor: "#000000", color: "#ffffff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "12px" },
-  authorName: { fontWeight: 700, fontSize: "14px", color: "#18181b" },
-  docDate: { fontSize: "12px", color: "#a1a1aa" },
-  badge: { marginLeft: "auto", backgroundColor: "#dcfce7", color: "#15803d", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 600 },
-  deleteBtn: { border: "none", background: "none", cursor: "pointer", fontSize: "14px", padding: "4px", borderRadius: "6px", marginLeft: "4px" },
-  previewContainer: { height: "190px", width: "100%", borderRadius: "16px", overflow: "hidden", backgroundColor: "#fafafa", border: "1px solid #f4f4f5" },
-  iframePreview: { width: "100%", height: "100%", border: "none" },
-  placeholderPreview: { height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px" },
-  cardTitle: { fontSize: "16px", fontWeight: 700, color: "#18181b", margin: "4px 0", overflowWrap: "anywhere" },
-  tagsRow: { display: "flex", gap: "8px", flexWrap: "wrap" },
-  tag: { border: "1px solid #e4e4e7", borderRadius: "20px", padding: "4px 12px", fontSize: "12px", color: "#71717a", backgroundColor: "#ffffff" },
-  actionsRow: { display: "flex", gap: "10px", marginTop: "8px" },
-  viewBtn: { flex: 1, textAlign: "center", padding: "10px", borderRadius: "10px", border: "1px solid #e4e4e7", textDecoration: "none", color: "#18181b", fontSize: "13px", fontWeight: 600 },
-  downloadBtn: { flex: 1, textAlign: "center", padding: "10px", borderRadius: "10px", backgroundColor: "#000000", textDecoration: "none", color: "#ffffff", fontSize: "13px", fontWeight: 600 },
 };
+
+export default Documentos;
